@@ -1,5 +1,5 @@
 # this script performs preliminary data cleaning, matching of control and treatment group through the propensity score
-# matching algorithm. 
+# matching algorithm.
 
 
 # Load necessary libraries
@@ -7,123 +7,38 @@
 #install.packages("cobalt")
 library("MatchIt")  # For propensity score matching
 library("dplyr")    # For data manipulation
-library("cobalt")
 # Generate sample data
 set.seed(123)  # Set seed for reproducibility
+data = read.csv("/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/data_prepared_for_matching.csv")
 
-impute_all_columns <- function(data) {
-  for (col in colnames(data)) {
-    if (is.numeric(data[[col]])) {
-      data[[col]] <- ifelse(is.na(data[[col]]), ave(data[[col]], data$gvkey, FUN = function(x) mean(x, na.rm = TRUE)), data[[col]])
+
+
+calculate_means_2 <- function(input_df) {
+  # Convert all columns to numeric
+  input_df <- as.data.frame(lapply(input_df, as.numeric))
+
+  unique_gvkeys <- unique(input_df$gvkey)
+  output_df <- data.frame(gvkey = unique_gvkeys)
+
+  for (col_name in colnames(input_df)) {
+    if (col_name != "gvkey") {
+      means <- aggregate(input_df[col_name], list(input_df$gvkey), mean)
+      output_df <- merge(output_df, means, by.x = "gvkey", by.y = "Group.1", all.x = TRUE)
+      colnames(output_df)[colnames(output_df) == col_name] <- paste0(col_name)
     }
   }
-  
-  return(data)
+
+  return(output_df)
 }
-
-
-typeof(data$year)
-# Create a dataframe with variables for treatment, covariates, and outcome
-raw_data = read.csv("/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/final_firm_level_data.csv")
-data = raw_data[c("gvkey","sale","xrd","dp","ceq","prcc_c","csho", "dlc","dltt","treated","capx", 
-                  "aqc","at","ppent", "ch","ibc", "mkvalt", "year")]#, "seq", "ch","ppent", "ivstch"]]
-
-
-data2 = data
-for (searchyear in unique(data$year)) {
-  # Filter data for the current year
-  year_data <- filter(data, year == searchyear)
-
-}
-
-# fill in the empty values with the mean for each gvkey
-# at
-data$at[is.na(data$at)] <- ave(data$at, data$gvkey, FUN = function(x) mean(x, na.rm = TRUE))
-data$at[is.nan(data$at)] <- ave(data$at, data$gvkey, FUN = function(x) mean(x, nan.rm = TRUE))
-data$at[is.infinite(data$at)] <- ave(data$at, data$gvkey, FUN = function(x) mean(x, infinite.rm = TRUE))
-
-# dltt
-data$dltt <- ifelse(is.na(data$dltt), ave(data$dltt, data$gvkey, FUN = function(x) mean(x, na.rm = TRUE)), data$dltt)
-data$dltt <- ifelse(is.nan(data$dltt), ave(data$dltt, data$gvkey, FUN = function(x) mean(x, nan.rm = TRUE)), data$dltt)
-data$dltt <- ifelse(is.infinite(data$dltt), ave(data$dltt, data$gvkey, FUN = function(x) mean(x, infinite.rm = TRUE)), data$dltt)
-
-
-# sale
-data$sale <- ifelse(is.na(data$sale), ave(data$sale, data$gvkey, FUN = function(x) mean(x, na.rm = TRUE)), data$sale)
-data$sale <- ifelse(is.nan(data$sale), ave(data$sale, data$gvkey, FUN = function(x) mean(x, nan.rm = TRUE)), data$sale)
-data$sale <- ifelse(is.infinite(data$sale), ave(data$sale, data$gvkey, FUN = function(x) mean(x, infinite.rm = TRUE)), data$sale)
-
-# ceq
-data$ceq <- ifelse(is.na(data$ceq), ave(data$ceq, data$gvkey, FUN = function(x) mean(x, na.rm = TRUE)), data$ceq)
-data$ceq <- ifelse(is.nan(data$ceq), ave(data$ceq, data$gvkey, FUN = function(x) mean(x, nan.rm = TRUE)), data$ceq)
-data$ceq <- ifelse(is.infinite(data$ceq), ave(data$ceq, data$gvkey, FUN = function(x) mean(x, infinite.rm = TRUE)), data$ceq)
-
-
-# prcc_c 
-data$prcc_c <- ifelse(is.na(data$prcc_c), ave(data$prcc_c, data$gvkey, FUN = function(x) mean(x, na.rm = TRUE)), data$prcc_c)
-data$prcc_c <- ifelse(is.nan(data$prcc_c), ave(data$prcc_c, data$gvkey, FUN = function(x) mean(x, nan.rm = TRUE)), data$prcc_c)
-data$prcc_c <- ifelse(is.infinite(data$prcc_c), ave(data$prcc_c, data$gvkey, FUN = function(x) mean(x, infinite.rm = TRUE)), data$prcc_c)
-
-
-# csho
-data$csho <- ifelse(is.na(data$csho), ave(data$csho, data$gvkey, FUN = function(x) mean(x, na.rm = TRUE)), data$csho)
-data$csho <- ifelse(is.nan(data$csho), ave(data$csho, data$gvkey, FUN = function(x) mean(x, nan.rm = TRUE)), data$csho)
-data$csho <- ifelse(is.infinite(data$csho), ave(data$csho, data$gvkey, FUN = function(x) mean(x, infinite.rm = TRUE)), data$csho)
-
-# dlc
-data$dlc <- ifelse(is.na(data$dlc), ave(data$dlc, data$gvkey, FUN = function(x) mean(x, na.rm = TRUE)), data$dlc)
-data$dlc <- ifelse(is.nan(data$dlc), ave(data$dlc, data$gvkey, FUN = function(x) mean(x, nan.rm = TRUE)), data$dlc)
-data$dlc <- ifelse(is.infinite(data$dlc), ave(data$dlc, data$gvkey, FUN = function(x) mean(x, infinite.rm = TRUE)), data$dlc)
-
-# capx
-data$capx <- ifelse(is.na(data$capx), ave(data$capx, data$gvkey, FUN = function(x) mean(x, na.rm = TRUE)), data$capx)
-data$capx <- ifelse(is.nan(data$capx), ave(data$capx, data$gvkey, FUN = function(x) mean(x, nan.rm = TRUE)), data$capx)
-data$capx <- ifelse(is.infinite(data$capx), ave(data$capx, data$gvkey, FUN = function(x) mean(x, infinite.rm = TRUE)), data$capx)
-
-
-# aqc
-data$aqc <- ifelse(is.na(data$aqc), ave(data$aqc, data$gvkey, FUN = function(x) mean(x, na.rm = TRUE)), data$aqc)
-data$aqc <- ifelse(is.nan(data$aqc), ave(data$aqc, data$gvkey, FUN = function(x) mean(x, nan.rm = TRUE)), data$aqc)
-data$aqc <- ifelse(is.infinite(data$aqc), ave(data$aqc, data$gvkey, FUN = function(x) mean(x, infinite.rm = TRUE)), data$aqc)
-
-# ppent 
-data$ppent <- ifelse(is.na(data$ppent), ave(data$ppent, data$gvkey, FUN = function(x) mean(x, na.rm = TRUE)), data$ppent)
-data$ppent <- ifelse(is.nan(data$ppent), ave(data$ppent, data$gvkey, FUN = function(x) mean(x, nan.rm = TRUE)), data$ppent)
-data$ppent <- ifelse(is.infinite(data$ppent), ave(data$ppent, data$gvkey, FUN = function(x) mean(x, infinites.rm = TRUE)), data$ppent)
-
-# ch
-data$ch <- ifelse(is.na(data$ch), ave(data$ch, data$gvkey, FUN = function(x) mean(x, na.rm = TRUE)), data$ch)
-data$ch <- ifelse(is.nan(data$ch), ave(data$ch, data$gvkey, FUN = function(x) mean(x, nan.rm = TRUE)), data$ch)
-data$ch <- ifelse(is.infinite(data$ch), ave(data$ch, data$gvkey, FUN = function(x) mean(x, infinite.rm = TRUE)), data$ch)
-
-# ibc
-data$ibc <- ifelse(is.na(data$ibc), ave(data$ibc, data$gvkey, FUN = function(x) mean(x, na.rm = TRUE)), data$ibc)
-data$ibc <- ifelse(is.nan(data$ibc), ave(data$ibc, data$gvkey, FUN = function(x) mean(x, nan.rm = TRUE)), data$ibc)
-data$ibc <- ifelse(is.infinite(data$ibc), ave(data$ibc, data$gvkey, FUN = function(x) mean(x, infinite.rm = TRUE)), data$ibc)
-
-
-# mkvalt 
-data$mkvalt <- ifelse(is.na(data$mkvalt), ave(data$mkvalt, data$gvkey, FUN = function(x) mean(x, na.rm = TRUE)), data$mkvalt)
-data$mkvalt <- ifelse(is.nan(data$mkvalt), ave(data$mkvalt, data$gvkey, FUN = function(x) mean(x, nan.rm = TRUE)), data$mkvalt)
-data$mkvalt <- ifelse(is.infinite(data$mkvalt), ave(data$mkvalt, data$gvkey, FUN = function(x) mean(x, nan.infinite = TRUE)), data$mkvalt)
-
-# dp 
-data$dp <- ifelse(is.na(data$dp), ave(data$dp, data$gvkey, FUN = function(x) mean(x, na.rm = TRUE)), data$dp)
-data$dp <- ifelse(is.nan(data$dp), ave(data$dp, data$gvkey, FUN = function(x) mean(x, nan.rm = TRUE)), data$dp)
-data$dp <- ifelse(is.infinite(data$dp), ave(data$dp, data$gvkey, FUN = function(x) mean(x, infinite.rm = TRUE)), data$dp)
-
-
-
-
 
 
 # create lagged variables
 # xrd
-data <- data %>%
+
+data <-
+  data %>%
   group_by(gvkey) %>%
-  arrange(year) %>%
-  mutate(lag1_xrd = lag(xrd, n = 1, default = NA)) %>%
-  as.data.frame()
+  mutate(lag1_xrd = dplyr::lag(xrd, n = 1, default = NA))
 
 data$lag1_xrd <- ifelse(is.na(data$lag1_xrd), ave(data$lag1_xrd, data$gvkey, FUN = function(x) mean(x, na.rm = TRUE)), data$lag1_xrd)
 data$lag1_xrd <- ifelse(is.nan(data$lag1_xrd), ave(data$lag1_xrd, data$gvkey, FUN = function(x) mean(x, nan.rm = TRUE)), data$lag1_xrd)
@@ -132,16 +47,15 @@ data$lag1_xrd <- ifelse(is.infinite(data$lag1_xrd), ave(data$lag1_xrd, data$gvke
 data$lag1_xrd[is.nan(data$lag1_xrd)] <- mean(data$lag1_xrd, na.rm = TRUE)
 
 
-  
-  
+
+
 # sales
 data$sale =ifelse(data$sale>0, data$sale, 0)
 
-data <- data %>%
+data <-
+  data %>%
   group_by(gvkey) %>%
-  arrange(year) %>%
-  mutate(lag1_sale = lag(sale, n = 1, default = NA)) %>%
-  as.data.frame()
+  mutate(lag1_sale = dplyr::lag(sale, n = 1, default = NA))
 
 data$lag1_sale <- ifelse(is.na(data$lag1_sale), ave(data$lag1_sale, data$gvkey, FUN = function(x) mean(x, na.rm = TRUE)), data$lag1_sale)
 data$lag1_sale <- ifelse(is.nan(data$lag1_sale), ave(data$lag1_sale, data$gvkey, FUN = function(x) mean(x, nan.rm = TRUE)), data$lag1_sale)
@@ -154,12 +68,14 @@ data$lag1_sale[is.infinite(data$lag1_sale)] <- mean(data$lag1_sale, infinite.rm 
 
 
 
-# total assets 
+# total assets
 data <- data %>%
   group_by(gvkey) %>%
-  arrange(year) %>%
-  mutate(lag1_at = lag(at, n = 1, default = NA)) %>%
-  as.data.frame()
+  mutate(lag1_at = lag(at, n = 1, default = NA))
+
+data <- data %>%
+  group_by(gvkey) %>%
+  dplyr::mutate(lead1_at = dplyr::lead(at, n = 1, default = NA))
 
 data$lag1_at <- ifelse(is.na(data$lag1_at), ave(data$lag1_at, data$gvkey, FUN = function(x) mean(x, na.rm = TRUE)), data$lag1_at)
 data$lag1_at <- ifelse(is.nan(data$lag1_at), ave(data$lag1_at, data$gvkey, FUN = function(x) mean(x, nan.rm = TRUE)), data$lag1_at)
@@ -171,40 +87,64 @@ data$lag1_at[is.infinite(data$lag1_at)] <- mean(data$lag1_at, infinite.rm = TRUE
 
 
 
-# create the outcome variables 
+# create the outcome variables
 
 data$r_d_intensity = (data$xrd/data$at) * 100
-data$r_d_change_intensity =  (data$xrd - data$lag1_xrd) / data$lag1_at * 100
-#data$r_d_change = (data$xrd - data$lag1_xrd) / 
+data$r_d_change_intensity =  (data$xrd - data$lag1_xrd / data$at- data$lag1_at) * 100
 
+data <- data %>%
+  group_by(gvkey) %>%
+  mutate(lead1_r_d_intensity = (dplyr::lead(r_d_intensity, n = 1, default = NA)))
+
+data <- data %>%
+  group_by(gvkey) %>%
+  mutate(lead2_r_d_intensity = (dplyr::lead(lead1_r_d_intensity, n = 1, default = NA)))
+
+data <- data %>%
+  group_by(gvkey) %>%
+  mutate(lead1_r_d_change_int = (dplyr::lead(r_d_change_intensity, n = 1, default = NA)))
+
+data <- data %>%
+  group_by(gvkey) %>%
+  mutate(lead2_r_d_change_int = (dplyr::lead(lead1_r_d_change_int, n = 1, default = NA)))
+
+
+
+data <- data[complete.cases(data$lead1_r_d_intensity), ]
+
+
+#data$r_d_change = (data$xrd - data$lag1_xrd) /
 
 
 
 # calculated values
+# ginds higher level
+
+data$gind_first_4 = as.integer(substr(data$gind, 1, 4))
+
 # sales
 data$ln_sales_calculated <- log(data$sale)
 # market to book value
 data$m_b_calculated <- (data$mkvalt - data$ceq + data$csho*data$prcc_c)/data$at * 100
-# cash flow? 
+# cash flow?
 data$cf_calculated = (data$ibc+data$dp)/data$at * 100
 # plants and property
 data$ppent_calculated = data$ppent/data$at * 100
 # sales growth percent
 data$sales_growth_calculated = data$ln_sales_calculated - log(data$lag1_sale)
 #leverage
-data$lev_calculated <- (data$dlc + data$dltt) /data$at * 100
+data$lev_calculated <- (data$dlc + data$dltt)*100 /data$at
+
 #cash
-data$ch_calculated <- data$ch/data$at * 100 
-# other investments 
+data$ch_calculated <- data$ch/data$at * 100
+# other investments
 data$other_inv_sum_calculated = data$capx + data$aqc
 
 
-# other investments lagged 
+# other investments lagged
 data <- data %>%
   group_by(gvkey) %>%
-  arrange(year) %>%
-  mutate(lag1_oth_inv_sum = lag(other_inv_sum_calculated, n = 1, default = NA)) %>%
-  as.data.frame()
+  mutate(lag1_oth_inv_sum = dplyr::lag(other_inv_sum_calculated, n = 1, default = NA))
 
 data$lag1_oth_inv_sum <- ifelse(is.na(data$lag1_oth_inv_sum), ave(data$lag1_oth_inv_sum, data$gvkey, FUN = function(x) mean(x, na.rm = TRUE)), data$lag1_oth_inv_sum)
 data$lag1_oth_inv_sum <- ifelse(is.nan(data$lag1_oth_inv_sum), ave(data$lag1_oth_inv_sum, data$gvkey, FUN = function(x) mean(x, nan.rm = TRUE)), data$lag1_oth_inv_sum)
@@ -214,7 +154,7 @@ data$lag1_oth_inv_sum[is.na(data$lag1_oth_inv_sum)] <- mean(data$lag1_oth_inv_su
 data$lag1_oth_inv_sum[is.nan(data$lag1_oth_inv_sum)] <- mean(data$lag1_oth_inv_sum, nan.rm = TRUE)
 data$lag1_oth_inv_sum[is.infinite(data$lag1_oth_inv_sum)] <- mean(data$lag1_oth_inv_sum, infinite.rm = TRUE)
 # delta other investments
-data$oth_inv_calculated <- (data$other_inv_sum- data$lag1_oth_inv_sum) /data$lag1_at * 100
+data$oth_inv_delta_calculated <- (data$other_inv_sum_calculated- data$lag1_oth_inv_sum) /data$lag1_at * 100
 
 
 
@@ -226,35 +166,50 @@ data$oth_inv_calculated <- (data$other_inv_sum- data$lag1_oth_inv_sum) /data$lag
 
 data[sapply(data, is.infinite)] <- 0
 data[sapply(data, is.nan)] <- 0
+data[sapply(data, is.na)] <- 0
+
+
+match_basis = subset(data,year<2011)
+match_basis = calculate_means_2(input_df = data)
 
 matched_data = data_frame()
 # Iterate over unique years
-for (searchyear in unique(data$year)) {
-  # Filter data for the current year
-  year_data <- filter(data, year == searchyear)
-  
-  # Perform propensity score matching
-  ps_match <- matchit(treated ~ ln_sales_calculated + m_b_calculated + sales_growth_calculated + 
-                        ppent_calculated + lev_calculated+ ch_calculated + r_d_change_intensity , data = year_data, method = "nearest")
-  
+# Filter data for the current year
+for (searchgind in unique(match_basis$gind_first_4)){
+    # Perform propensity score matching
+    gind_data = filter(match_basis, gind_first_4==searchgind)
+    if (length(unique(gind_data$treated)) < 2) {
+      next  # Skip to the next iteration
+    }
+
+    ps_match <- matchit(treated ~ ln_sales_calculated + cf_calculated + m_b_calculated + sales_growth_calculated +
+                          ppent_calculated + lev_calculated+ ch_calculated + oth_inv_delta_calculated , data = gind_data, method = "nearest", distance = "glm")
+    gind_matched_data <- match.data(ps_match)
+#    gind_matched_data$year <- searchyear
+    matched_data <- bind_rows(matched_data, gind_matched_data)
+  }
+
+# remap the matched observations
+
+
+  #We estimate the propensity score from a logit regression
+  #with the treatment dummy as the dependent variable and the mean values of ln(Sales),
+  #M/B, PPE, CF, S.Growth, Leverage, Cash, change in R&D, change in x investments (i.e., capital and acquisition expenditures),
+  #and the bank’s total securitized assets over the pre-period (2007–2009) as independent variables.
+
   # Obtain matched data for the current year
-  year_matched_data <- match.data(ps_match)
-  
+
+
   # Add year variable to matched data
-  year_matched_data$year <- searchyear
-  
+
   # Append matched data for the current year to the overall matched dataset
-  matched_data <- bind_rows(matched_data, year_matched_data)
-}
 
 
-# Output matched data and balance table
-mean(matched_data$xrd)
-aggregate(data[data$treated == 0, "xrd"], by = list(year = data[data$treated == 0, "year"]), FUN = mean)
-aggregate(data[data$treated == 1, "xrd"], by = list(year = data[data$treated == 1, "year"]), FUN = mean)
 
 
-balance_table <- cobalt::bal.tab(ps_match)
-balance_table
-write.csv(matched_data, file = "/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/matched_data.csv", row.names = FALSE)
 
+remapped_matching_observations <- data %>% filter(gvkey %in% matched_data$gvkey)
+
+remapped_matching_observations = subset(remapped_matching_observations, year >= 2007 & year <= 2015)
+
+write.csv(remapped_matching_observations, file = "/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/matched_data.csv", row.names = FALSE)
