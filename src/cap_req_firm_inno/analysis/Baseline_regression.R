@@ -44,7 +44,7 @@ subset_columns <- c("lead1_r_d_intensity", "did", "ln_sales_calculated", "cf_cal
 
 # Remove rows with missing values only in the subset columns
 subset_reg1 <- data[complete.cases(data[, subset_columns]), ]
-subset_reg1 = subset_reg1[apply(subset_reg1, 1, function(row) all(is.finite(row))),]
+#subset_reg1 = subset_reg1[apply(subset_reg1, 1, function(row) all(is.finite(row))),]
 
 
 
@@ -73,7 +73,7 @@ subset_columns <- c("lead1_r_d_intensity", "did", "ln_sales_calculated", "cf_cal
 
 # Remove rows with missing values only in the subset columns
 subset_reg1 <- data[complete.cases(data[, subset_columns]), ]
-subset_reg1 = subset_reg1[apply(subset_reg1, 1, function(row) all(is.finite(row))),]
+#subset_reg1 = subset_reg1[apply(subset_reg1, 1, function(row) all(is.finite(row))),]
 
 
 
@@ -99,7 +99,7 @@ subset_columns <- c("lead2_r_d_intensity", "did", "ln_sales_calculated", "cf_cal
 
 # Remove rows with missing values only in the subset columns
 subset_reg2 <- data[complete.cases(data[, subset_columns]), ]
-subset_reg2 = subset_reg2[apply(subset_reg2, 1, function(row) all(is.finite(row))),]
+#subset_reg2 = subset_reg2[apply(subset_reg2, 1, function(row) all(is.finite(row))),]
 
 
 did_reg_lead_2 = plm(lead2_r_d_intensity ~  did +
@@ -149,7 +149,7 @@ subset_columns <- c("lead1_r_d_intensity", "lin_est", "ln_sales_calculated", "cf
 
 # Remove rows with missing values only in the subset columns
 subset_reg1 <- data[complete.cases(data[, subset_columns]), ]
-subset_reg1 = subset_reg1[apply(subset_reg1, 1, function(row) all(is.finite(row))),]
+#subset_reg1 = subset_reg1[apply(subset_reg1, 1, function(row) all(is.finite(row))),]
 
 
 did_lin_var_lead_1 = plm(lead1_r_d_intensity ~  lin_est +
@@ -173,7 +173,7 @@ subset_columns <- c("lead2_r_d_intensity", "lin_est", "ln_sales_calculated", "cf
 
 # Remove rows with missing values only in the subset columns
 subset_reg2 <- data[complete.cases(data[, subset_columns]), ]
-subset_reg2 = subset_reg2[apply(subset_reg2, 1, function(row) all(is.finite(row))),]
+#subset_reg2 = subset_reg2[apply(subset_reg2, 1, function(row) all(is.finite(row))),]
 
 
 did_lin_var_lead_2 = plm(lead2_r_d_intensity ~  lin_est +

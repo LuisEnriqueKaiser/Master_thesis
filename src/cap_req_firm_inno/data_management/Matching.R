@@ -47,7 +47,7 @@ calculate_means2 <- function(input_df, columns) {
 
 # matching
 
-match_basis = subset(data,year<2011)
+match_basis = subset(data,year<=2011)
 match_basis = subset(match_basis, year >2007)
 match_basis = calculate_means2(input_df = match_basis, columns = columns_for_matching)
 
@@ -82,23 +82,6 @@ ps_match <- matchit(treated ~ cf_calculated + m_b_calculated +sales_growth_calcu
                     method = "nearest", distance = "logit")
 matched_data = match.data(ps_match)
 # remap the matched observations
-
-
-  #We estimate the propensity score from a logit regression
-  #with the treatment dummy as the dependent variable and the mean values of ln(Sales),
-  #M/B, PPE, CF, S.Growth, Leverage, Cash, change in R&D, change in x investments (i.e., capital and acquisition expenditures),
-  #and the bank’s total securitized assets over the pre-period (2007–2009) as independent variables.
-
-  # Obtain matched data for the current year
-
-
-  # Add year variable to matched data
-
-  # Append matched data for the current year to the overall matched dataset
-
-
-
-
 
 remapped_matching_observations <- data %>% filter(gvkey %in% matched_data$gvkey)
 

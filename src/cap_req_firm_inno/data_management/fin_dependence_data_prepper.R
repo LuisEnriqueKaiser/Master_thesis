@@ -35,7 +35,7 @@ data$did = data$post * data$treated
 data_pre_intervention = subset(data, year < tr_year)
 median_fin_dep = median(data_pre_intervention$net_change_capital, na.rm = TRUE)
 # Calculate the mean of net_change_capital for each gvkey
-group_means <- aggregate(net_change_capital ~ gvkey, data = data_pre_intervention, mean)
+group_means <- aggregate(net_change_capital ~ gvkey, data = data_pre_intervention, mean, na.rm = TRUE)
 # Merge the group means with the original dataframe
 data <- merge(data, group_means, by = "gvkey", suffixes = c("", "_mean"))
 data$fin_dependence_firms = ifelse(data$net_change_capital_mean>median_fin_dep, 1, 0)
