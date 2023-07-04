@@ -25,8 +25,8 @@ def calculate_treated_sum(firm_df, deals_df):
     for gvkey_value in firm_df["gvkey"]:
         # Subset 'deals_df' for gvkey_borrower equal to gvkey_value
         subset = deals_df[deals_df["gvkey_borrower"] == gvkey_value]
-        subset_before = subset[subset["year"] < 2010]
-        subset_after = subset[subset["year"] >= 2010]
+        subset_before = subset[subset["year"] <= 2011]
+        subset_after = subset[subset["year"] > 2011]
         # Set the sum as the value in 'treated_sum' column of 'firm_df'
         firm_df.loc[
             firm_df["gvkey"] == gvkey_value,
@@ -42,6 +42,112 @@ def calculate_treated_sum(firm_df, deals_df):
             firm_df["gvkey"] == gvkey_value,
             "treated_sum_after",
         ] = subset_after["treated"].sum()
+        # set the bank connections before
+        firm_df.loc[
+            firm_df["gvkey"] == gvkey_value,
+            "bank_connections_before",
+        ] = subset_before["gvkey_lender_unique_matching"].nunique()
+        # set the bank connections after
+        firm_df.loc[
+            firm_df["gvkey"] == gvkey_value,
+            "bank_connections_after",
+        ] = subset_before["gvkey_lender_unique_matching"].nunique()
+    return firm_df
+
+
+def calculate_treated_sum12(firm_df, deals_df):
+    """Calculates the sum of 'treated' column values from 'deals_df' for each gvkey in
+    'firm_df', and stores the sum in a new column 'treated_sum' in 'firm_df'.
+
+    Args:
+        firm_df (DataFrame): The first dataframe (Firm_level_data) with 'gvkey' column.
+        deals_df (DataFrame): The second dataframe (deals) with 'gvkey_borrower' and 'treated' columns.
+
+    Returns:
+        DataFrame: The modified 'firm_df' dataframe with 'treated_sum' column added.
+
+    """
+    # Create a new column 'treated_sum' in the 'firm_df' dataframe
+    firm_df["bank_connections_before"] = 0
+    firm_df["bank_connections_after"] = 0
+    firm_df["treated_sum_before"] = 0
+    firm_df["treated_sum_after"] = 0
+    firm_df["treated_all_before"] = 0
+
+    # Loop through gvkey values in 'firm_df'
+    for gvkey_value in firm_df["gvkey"]:
+        # Subset 'deals_df' for gvkey_borrower equal to gvkey_value
+        subset = deals_df[deals_df["gvkey_borrower"] == gvkey_value]
+        subset_before = subset[subset["year"] <= 2011]
+        subset_after = subset[subset["year"] > 2011]
+        # Set the sum as the value in 'treated_sum' column of 'firm_df'
+        firm_df.loc[
+            firm_df["gvkey"] == gvkey_value,
+            "treated_sum_before",
+        ] = subset_before["treated_12"].sum()
+        if (subset_before["treated_12"].sum() > 0) & (
+            subset_before["treated_12"].sum == subset_before.shape[0]
+        ):
+            firm_df.loc[firm_df["gvkey"] == gvkey_value, "treated_all_before"] = 1
+
+        # set the treated sum after
+        firm_df.loc[
+            firm_df["gvkey"] == gvkey_value,
+            "treated_sum_after",
+        ] = subset_after["treated_12"].sum()
+        # set the bank connections before
+        firm_df.loc[
+            firm_df["gvkey"] == gvkey_value,
+            "bank_connections_before",
+        ] = subset_before["gvkey_lender_unique_matching"].nunique()
+        # set the bank connections after
+        firm_df.loc[
+            firm_df["gvkey"] == gvkey_value,
+            "bank_connections_after",
+        ] = subset_before["gvkey_lender_unique_matching"].nunique()
+    return firm_df
+
+
+def calculate_treated_sum10(firm_df, deals_df):
+    """Calculates the sum of 'treated' column values from 'deals_df' for each gvkey in
+    'firm_df', and stores the sum in a new column 'treated_sum' in 'firm_df'.
+
+    Args:
+        firm_df (DataFrame): The first dataframe (Firm_level_data) with 'gvkey' column.
+        deals_df (DataFrame): The second dataframe (deals) with 'gvkey_borrower' and 'treated' columns.
+
+    Returns:
+        DataFrame: The modified 'firm_df' dataframe with 'treated_sum' column added.
+
+    """
+    # Create a new column 'treated_sum' in the 'firm_df' dataframe
+    firm_df["bank_connections_before"] = 0
+    firm_df["bank_connections_after"] = 0
+    firm_df["treated_sum_before"] = 0
+    firm_df["treated_sum_after"] = 0
+    firm_df["treated_all_before"] = 0
+
+    # Loop through gvkey values in 'firm_df'
+    for gvkey_value in firm_df["gvkey"]:
+        # Subset 'deals_df' for gvkey_borrower equal to gvkey_value
+        subset = deals_df[deals_df["gvkey_borrower"] == gvkey_value]
+        subset_before = subset[subset["year"] <= 2011]
+        subset_after = subset[subset["year"] > 2011]
+        # Set the sum as the value in 'treated_sum' column of 'firm_df'
+        firm_df.loc[
+            firm_df["gvkey"] == gvkey_value,
+            "treated_sum_before",
+        ] = subset_before["treated_10"].sum()
+        if (subset_before["treated_10"].sum() > 0) & (
+            subset_before["treated_10"].sum == subset_before.shape[0]
+        ):
+            firm_df.loc[firm_df["gvkey"] == gvkey_value, "treated_all_before"] = 1
+
+        # set the treated sum after
+        firm_df.loc[
+            firm_df["gvkey"] == gvkey_value,
+            "treated_sum_after",
+        ] = subset_after["treated_10"].sum()
         # set the bank connections before
         firm_df.loc[
             firm_df["gvkey"] == gvkey_value,
@@ -103,6 +209,114 @@ def fill_missing_xrd(first_df, second_df):
     return first_df
 
 
+def filter_df(df):
+    # Convert the 'year' column to datetime type if it's not already
+    df["fyear"] = pd.to_datetime(df["fyear"], format="%Y")
+
+    # Group the DataFrame by 'gvkey' and check if there are observations both before and after 2010
+    filtered_df = df.groupby("gvkey").filter(
+        lambda x: any(x["fyear"] <= pd.to_datetime("2011", format="%Y"))
+        and any(x["fyear"] > pd.to_datetime("2011", format="%Y")),
+    )
+
+    return filtered_df
+
+
+def calculate_bank_averages(deals, firm_level_data, column):
+    """Calculates bank specific variable averages over all banks, predating the
+    treatment at the.
+    """
+    firm_level_data[column] = np.nan
+    for index, row in firm_level_data.iterrows():
+        subset = deals[
+            (deals["gvkey_borrower"] == row["gvkey"]) & (deals["year"] <= 2011)
+        ]
+        # firm_level_data.loc[]
+        if not subset.empty:
+            mean = subset[column].mean(skipna=True)
+            firm_level_data.at[index, column] = mean
+    return firm_level_data
+
+
+def fill_rq(first_df, second_df):
+    for index, row in first_df.iterrows():
+        gvkey_value = row["gvkey"]
+        year = row["fyear"]
+        matching_row = second_df[
+            (second_df["gvkey"] == gvkey_value) & (second_df["fyear"] == year)
+        ]  # Find matching row in second dataframe
+        if not matching_row.empty:
+            rq_value = matching_row.iloc[0][
+                "RDintensity"
+            ]  # Retrieve 'rq' value from second dataframe
+            first_df.at[index, "r_d_rq"] = rq_value
+
+    return first_df
+
+
+def count_banks(deals, firm_level_data):
+    # get the subset of the deals, which are important predating the treatment
+    deals_subset = deals[deals["year"] <= 2011]
+
+    # loop through all firm level data and assign the number
+    for index, row in firm_level_data.iterrows():
+        countset = deals_subset[deals_subset["gvkey_borrower"] == row["gvkey"]]
+        # firm_level_data.loc[]
+        if not countset.empty:
+            Bank_count = countset["gvkey_lender_unique_matching"].nunique()
+            firm_level_data.at[index, "nr_of_lenders_pretreatment_period"] = Bank_count
+    return firm_level_data
+
+
+def count_treated_banks(deals, firm_level_data):
+    # get the subset of the deals, which are important predating the treatment
+    deals_subset = deals[deals["year"] <= 2011]
+    deals_subset = deals_subset[deals_subset["treated"] == 1]
+
+    # loop through all firm level data and assign the number
+    for index, row in firm_level_data.iterrows():
+        countset = deals_subset[deals_subset["gvkey_borrower"] == row["gvkey"]]
+        # firm_level_data.loc[]
+        if not countset.empty:
+            Bank_count = countset["gvkey_lender_unique_matching"].nunique()
+            firm_level_data.at[
+                index,
+                "nr_of_treated_lenders_pretreatment_period",
+            ] = Bank_count
+    return firm_level_data
+
+
+def avg_maturity(
+    deals,
+    firm_level_data,
+):  # get the subset of the deals, which are important predating the treatment
+    deals_subset = deals[deals["year"] <= 2011]
+
+    # loop through all firm level data and assign the number
+    for index, row in firm_level_data.iterrows():
+        countset = deals_subset[deals_subset["gvkey_borrower"] == row["gvkey"]]
+        # firm_level_data.loc[]
+        if not countset.empty:
+            avg_maturity = countset["Maturity"].mean(skipna=True)
+            firm_level_data.at[index, "avg_maturity_pre_tr"] = avg_maturity
+    return firm_level_data
+
+
+def yearly_avg_maturity(deals, firm_level_data):
+    deals_subset = deals
+    # loop through all firm level data and assign the number
+    for index, row in firm_level_data.iterrows():
+        countset = deals_subset[
+            (deals_subset["gvkey_borrower"] == row["gvkey"])
+            & (deals_subset["year"] == row["year"])
+        ]
+        # firm_level_data.loc[]
+        if not countset.empty:
+            avg_maturity = countset["Maturity"].mean(skipna=True)
+            firm_level_data.at[index, "avg_maturity_per_year"] = avg_maturity
+    return firm_level_data
+
+
 #######################################
 # Load in the data
 Firm_level_data = pd.read_csv(
@@ -116,9 +330,12 @@ deals = pd.read_excel(
     "/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/deals.xlsx",
 )
 
-
-# enrich the missing xrd values with the RQ dataset
-Firm_level_data = fill_missing_xrd(first_df=Firm_level_data, second_df=R_D)
+bank_specific_variables = [
+    "mean_eps_pretreatment_bank",
+    "banks_allowances_loan_mean_pretreatment",
+    "banks_net_income_mean_pretreatment",
+    "banks_assets_total_mean_pretreatment",
+]
 
 
 # initial data cleaning
@@ -127,10 +344,22 @@ Firm_level_data = Firm_level_data.dropna(subset=["acctstd"])  # one accounting s
 Firm_level_data = Firm_level_data[
     Firm_level_data["acctstd"] != "ND"
 ]  # one accounting standard
+
+
 Firm_level_data["year"] = Firm_level_data["datadate"].str[:4].astype(int)
-Firm_level_data = Firm_level_data[Firm_level_data["fyear"] < 2018]  # right timeframe
+# create the "born variable"
+Firm_level_data = Firm_level_data.sort_values("year")
+Firm_level_data["firm_born"] = Firm_level_data.groupby("gvkey")["year"].transform(
+    "first",
+)
+
+
+Firm_level_data = Firm_level_data[Firm_level_data["fyear"] < 2020]  # right timeframe
 Firm_level_data = Firm_level_data[Firm_level_data["fyear"] > 2005]
 
+# enrich the missing xrd values with the RQ dataset
+Firm_level_data["r_d_rq"] = np.nan
+Firm_level_data = fill_rq(first_df=Firm_level_data, second_df=R_D)
 Firm_level_data = Firm_level_data[Firm_level_data["xrd"].notna()]
 Firm_level_data = Firm_level_data[Firm_level_data["xrd"] > 0]
 # only non-financial firms
@@ -138,12 +367,54 @@ Firm_level_data = Firm_level_data[
     (Firm_level_data.gind < 400000) | (Firm_level_data.gind > 499999)
 ]
 Firm_level_data = Firm_level_data[(Firm_level_data.gind < 601010)]
-
+# ensure that every firm has one observation before and after the treatment period
+Firm_level_data = filter_df(df=Firm_level_data)
 
 # Connect with the Dealscan legacy dataset
 
+deals_sub = deals
+
+for bank_specific in bank_specific_variables:
+    print(bank_specific)
+    Firm_level_data = calculate_bank_averages(
+        deals=deals_sub,
+        firm_level_data=Firm_level_data,
+        column=bank_specific,
+    )
+
+# bank count and maturity mapping
+print("counting banks now")
+Firm_level_data = count_banks(deals=deals, firm_level_data=Firm_level_data)
+Firm_level_data = count_treated_banks(deals=deals, firm_level_data=Firm_level_data)
+
+# maturity mapping
+Firm_level_data = avg_maturity(deals=deals, firm_level_data=Firm_level_data)
+Firm_level_data = yearly_avg_maturity(deals=deals, firm_level_data=Firm_level_data)
+
 Firm_level_data = calculate_treated_sum(firm_df=Firm_level_data, deals_df=deals)
-Firm_level_data["treated"] = np.where(Firm_level_data["treated_sum_before"] > 0, 1, 0)
+Firm_level_data = Firm_level_data.dropna(subset=["treated_sum_before"])
+Firm_level_data["treated_sum_before_8"] = Firm_level_data["treated_sum_before"]
+Firm_level_data["treated"] = np.where(Firm_level_data["treated_sum_before_8"] > 0, 1, 0)
+
+Firm_level_data = calculate_treated_sum10(firm_df=Firm_level_data, deals_df=deals)
+Firm_level_data = Firm_level_data.dropna(subset=["treated_sum_before"])
+Firm_level_data["treated_sum_before_10"] = Firm_level_data["treated_sum_before"]
+Firm_level_data["treated_10"] = np.where(
+    Firm_level_data["treated_sum_before_10"] > 0,
+    1,
+    0,
+)
+
+
+Firm_level_data = calculate_treated_sum12(firm_df=Firm_level_data, deals_df=deals)
+Firm_level_data = Firm_level_data.dropna(subset=["treated_sum_before"])
+Firm_level_data["treated_sum_before_12"] = Firm_level_data["treated_sum_before"]
+Firm_level_data["treated_12"] = np.where(
+    Firm_level_data["treated_sum_before_12"] > 0,
+    1,
+    0,
+)
+
 
 Firm_level_data.to_csv(
     "/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/final_firm_level_data.csv",

@@ -1,3 +1,5 @@
+
+rm(list = ls())
 library("dplyr")    # For data manipulation
 library("plm")
 # data prep
@@ -5,10 +7,11 @@ library("plm")
 # Create a dataframe with variables for treatment, covariates, and outcome
 raw_data = read.csv("/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/final_firm_level_data.csv")
 
-data = raw_data[c("gvkey","sale","xrd","dp","ceq","prcc_c","csho", "dlc","dltt","treated", "treated_10", "treated_12","capx","r_d_rq",
-                  "aqc","at","ppent", "ch","ibc", "mkvalt", "year", "gind","ebitda","ni","firm_born",
-                  "Assets_total_lender","net_income_banks","loan_banks_total","banks_allowances_total",
+data = raw_data[c("gvkey","sale","nr_of_lenders_pretreatment_period","nr_of_treated_lenders_pretreatment_period", "treated_sum_before_8","treated","xrd","dp","ceq","prcc_c","csho", "dlc","dltt","treated", "treated_10", "treated_12","capx","r_d_rq",
+                  "aqc","at","ppent", "ch","ibc", "mkvalt", "year", "gind","ebitda","ni","firm_born","avg_maturity_per_year","avg_maturity_pre_tr",
+                  "mean_eps_pretreatment_bank", "banks_allowances_loan_mean_pretreatment", "banks_net_income_mean_pretreatment", "banks_assets_total_mean_pretreatment",
                   "dt", "cshi", "dcpstk")]#, "seq", "ch","ppent", "ivstch"]]
+
 
 
 # first checking
@@ -19,30 +22,44 @@ columns_to_impute <-c("Assets_total_lender","net_income_banks","loan_banks_total
 # Drop rows with missing or infinite values
 
 
+
 data <- data[complete.cases(data[, columns_to_check]) & apply(data[, columns_to_check], 1, function(x) all(is.finite(x))), ]
+
+# treated lender dependence
+data$nr_of_lenders_pretreatment_period = ifelse(is.na(data$nr_of_lenders_pretreatment_period), 0, data$nr_of_lenders_pretreatment_period)
+data$nr_of_treated_lenders_pretreatment_period = ifelse(is.na(data$nr_of_treated_lenders_pretreatment_period), 0, data$nr_of_treated_lenders_pretreatment_period)
+data$tr_lender_share = data$nr_of_treated_lenders_pretreatment_period /data$nr_of_lenders_pretreatment_period
+data$tr_lender_share[is.na(data$tr_lender_share) | is.infinite(data$tr_lender_share)] =  0
+
+
+data$avg_maturity_pre_tr[is.na(data$avg_maturity_pre_tr) | is.infinite(data$avg_maturity_pre_tr)] = 0
+data$avg_maturity_per_year[is.na(data$avg_maturity_per_year) | is.infinite(data$avg_maturity_per_year)] = 0
+
+#data$treated  = ifelse(data$tr_lender_share >= 0.7,1,0)
 # age variable
+
 data$age <- as.integer(data$year) - as.integer(data$firm_born)
 
 
 # at banks
-data$Assets_total_lender <- ifelse(is.na(data$Assets_total_lender), ave(data$Assets_total_lender, data$gvkey, FUN = function(x) mean(x, na.rm = TRUE)), data$Assets_total_lender)
-data$Assets_total_lender <- ifelse(is.nan(data$Assets_total_lender), ave(data$Assets_total_lender, data$gvkey, FUN = function(x) mean(x, nan.rm = TRUE)), data$Assets_total_lender)
-data$Assets_total_lender <- ifelse(is.infinite(data$Assets_total_lender), ave(data$Assets_total_lender, data$gvkey, FUN = function(x) mean(x, infinite.rm = TRUE)), data$Assets_total_lender)
+#data$Assets_total_lender <- ifelse(is.na(data$Assets_total_lender), ave(data$Assets_total_lender, data$gvkey, FUN = function(x) mean(x, na.rm = TRUE)), data$Assets_total_lender)
+#data$Assets_total_lender <- ifelse(is.nan(data$Assets_total_lender), ave(data$Assets_total_lender, data$gvkey, FUN = function(x) mean(x, nan.rm = TRUE)), data$Assets_total_lender)
+#data$Assets_total_lender <- ifelse(is.infinite(data$Assets_total_lender), ave(data$Assets_total_lender, data$gvkey, FUN = function(x) mean(x, infinite.rm = TRUE)), data$Assets_total_lender)
 
 
 
 
 # loans banks
 
-data$loan_banks_total <- ifelse(is.na(data$loan_banks_total), ave(data$loan_banks_total, data$gvkey, FUN = function(x) mean(x, na.rm = TRUE)), data$loan_banks_total)
-data$loan_banks_total <- ifelse(is.nan(data$loan_banks_total), ave(data$loan_banks_total, data$gvkey, FUN = function(x) mean(x, nan.rm = TRUE)), data$loan_banks_total)
-data$loan_banks_total <- ifelse(is.infinite(data$loan_banks_total), ave(data$loan_banks_total, data$gvkey, FUN = function(x) mean(x, infinite.rm = TRUE)), data$loan_banks_total)
+#data$loan_banks_total <- ifelse(is.na(data$loan_banks_total), ave(data$loan_banks_total, data$gvkey, FUN = function(x) mean(x, na.rm = TRUE)), data$loan_banks_total)
+#data$loan_banks_total <- ifelse(is.nan(data$loan_banks_total), ave(data$loan_banks_total, data$gvkey, FUN = function(x) mean(x, nan.rm = TRUE)), data$loan_banks_total)
+#data$loan_banks_total <- ifelse(is.infinite(data$loan_banks_total), ave(data$loan_banks_total, data$gvkey, FUN = function(x) mean(x, infinite.rm = TRUE)), data$loan_banks_total)
 
 
 # net income banks
-data$net_income_banks[is.na(data$net_income_banks)] <- ave(data$net_income_banks, data$gvkey, FUN = function(x) mean(x, na.rm = TRUE))
-data$net_income_banks[is.nan(data$net_income_banks)] <- ave(data$net_income_banks, data$gvkey, FUN = function(x) mean(x, nan.rm = TRUE))
-data$net_income_banks[is.infinite(data$net_income_banks)] <- ave(data$net_income_banks, data$gvkey, FUN = function(x) mean(x, infinite.rm = TRUE))
+#data$net_income_banks[is.na(data$net_income_banks)] <- ave(data$net_income_banks, data$gvkey, FUN = function(x) mean(x, na.rm = TRUE))
+#data$net_income_banks[is.nan(data$net_income_banks)] <- ave(data$net_income_banks, data$gvkey, FUN = function(x) mean(x, nan.rm = TRUE))
+#data$net_income_banks[is.infinite(data$net_income_banks)] <- ave(data$net_income_banks, data$gvkey, FUN = function(x) mean(x, infinite.rm = TRUE))
 
 
 
@@ -51,13 +68,13 @@ data$net_income_banks[is.infinite(data$net_income_banks)] <- ave(data$net_income
 
 # impute the still missing values
 
-for (col in columns_to_impute) {
+#for (col in columns_to_impute) {
   # Calculate the mean of the column
-  mean_value <- mean(data[[col]], na.rm = TRUE)
+#  mean_value <- mean(data[[col]], na.rm = TRUE)
 
   # Fill NA values with the mean
-  data[[col]][is.na(data[[col]])] <- mean_value
-}
+#  data[[col]][is.na(data[[col]])] <- mean_value
+#}
 
 duplicated_rows <- duplicated(data[c("gvkey", "year")], by = c("gvkey", "year"))
 duplicate_data <- data[duplicated_rows, ]
@@ -105,6 +122,7 @@ data$lead2_r_d_change_intensity = data$lead2_r_d_intensity - data$lead1_r_d_inte
 
 # ginds higher level
 data$gind_first_4 = as.integer(substr(data$gind, 1, 4))
+data$gind_first_2 = as.integer(substr(data$gind, 1, 2))
 
 # sales
 data$ln_sales_calculated <- log(data$sale)
@@ -138,11 +156,7 @@ data$delta_cshi = data$cshi    - data$cshi_lag
 data$delta_dcpstk= data$dcpstk - data$dcpstk_lag
 data$net_change_capital = (data$delta_dt + data$delta_cshi * data$prcc_c + data$delta_dcpstk)/data$at
 
-
-columns_to_check = c("ln_sales_calculated", "cf_calculated", "m_b_calculated",
-                    "sales_growth_calculated","ppent_calculated", "lev_calculated","roa","capx",
-                    "oth_inv_delta_calculated","ch_calculated", "at","age")
-data <- data[complete.cases(data[, columns_to_check]) & apply(data[, columns_to_check], 1, function(x) all(is.finite(x))), ]
+sum(is.na(data$banks_allowances_loan_mean_pretreatment))
 
 
 write.csv(data, file = "/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/data_prepared_for_matching.csv", row.names = FALSE)

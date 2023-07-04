@@ -15,12 +15,33 @@ set.seed(123)  # Set seed for reproducibility
 data = read.csv("/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/data_prepared_for_matching.csv")
 
 
+columns_to_winsorize = c("cf_calculated", "m_b_calculated",
+                         "sales_growth_calculated","ppent_calculated", "lev_calculated","roa","capx","oth_inv_delta_calculated",
+                         "other_inv_sum_calculated","ch_calculated", "at","age")
 
-columns_for_matching =  c("ln_sales_calculated", "cf_calculated" ,"m_b_calculated",
+
+
+
+columns_for_matching =  c("ln_sales_calculated", "cf_calculated" ,"m_b_calculated","net_change_capital",
                            "other_inv_sum_calculated", "capx","ebitda","roa","xrd","r_d_intensity",
-                          "ppent_calculated" ,"lev_calculated", "ch_calculated","at","age",
-                          "r_d_change_intensity", "gind_first_4", "gvkey", "treated","mkvalt",
-                          "sales_growth_calculated","loan_banks_total", "oth_inv_delta_calculated")
+                          "ppent_calculated" ,"lev_calculated", "ch_calculated","at","age","avg_maturity_per_year",
+                           "r_d_change_intensity", "gind_first_4", "gvkey", "treated","mkvalt",
+                          "sales_growth_calculated", "oth_inv_delta_calculated")
+
+data <- data[complete.cases(data[, columns_for_matching]), ]
+
+winsorize_dataframe <- function(data, column_names) {
+  for (col_name in column_names) {
+    col_values <- data[[col_name]]
+    q1 <- quantile(col_values, probs = 0.001)
+    q99 <- quantile(col_values, probs = 0.999)
+
+    data <- data[col_values >= q1 & col_values <= q99, ]
+
+  }
+
+  return(data)
+}
 
 calculate_means2 <- function(input_df, columns) {
   # Convert all columns to numeric
@@ -47,44 +68,24 @@ calculate_means2 <- function(input_df, columns) {
 
 # matching
 
-match_basis = subset(data,year<=2011)
+match_basis = subset(data,year<2011)
 match_basis = subset(match_basis, year >2007)
 match_basis = calculate_means2(input_df = match_basis, columns = columns_for_matching)
 
-
-matched_data = data_frame()
-
-# Iterate over unique years
-# Filter data for the current year
-# for (searchgind in unique(match_basis$gind_first_4)){
-#     # Perform propensity score matching
-#     gind_data = filter(match_basis, gind_first_4==searchgind)
-#     if (length(unique(gind_data$treated)) < 2) {
-#       print(searchgind)
-#       next  # Skip to the next iteration
-#     }
-#     ps_match <- matchit(treated ~ lev_calculated + roa + sales_growth_calculated+
-#                                   oth_inv_delta_calculated + m_b_calculated+cf_calculated+
-#                                   at+ oth_inv_delta_calculated +r_d_change_intensity
-#                           , data = gind_data,
-#                           method = "nearest", distance = "logit")
-#     gind_matched_data <- match.data(ps_match)
-# # gind_matched_data$year <- searchyear
-#     matched_data <- bind_rows(matched_data, gind_matched_data)
-#   }
-
-
 ps_match <- matchit(treated ~ cf_calculated + m_b_calculated +sales_growth_calculated+
-                      ppent_calculated + lev_calculated+ ch_calculated+roa+
-                      oth_inv_delta_calculated + at+ capx+age+
+                      ppent_calculated + lev_calculated+ ch_calculated+roa+net_change_capital+avg_maturity_per_year+
+                      oth_inv_delta_calculated + capx+age+
                       factor(gind_first_4)
                     , data = match_basis,
                     method = "nearest", distance = "logit")
 matched_data = match.data(ps_match)
 # remap the matched observations
 
+
+
+
 remapped_matching_observations <- data %>% filter(gvkey %in% matched_data$gvkey)
 
-remapped_matching_observations = subset(remapped_matching_observations, year >= 2005 & year <= 2020)
-
+remapped_matching_observations = subset(remapped_matching_observations, year >= 2007 & year <= 2016)
+remapped_matching_observations = winsorize_dataframe(remapped_matching_observations, columns_to_winsorize)
 write.csv(remapped_matching_observations, file = "/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/matched_data.csv", row.names = FALSE)

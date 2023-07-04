@@ -18,6 +18,22 @@ columns_for_matching =  c("ln_sales_calculated", "cf_calculated" ,"m_b_calculate
                           "ppent_calculated" ,"lev_calculated", "ch_calculated","at","age",
                           "r_d_change_intensity", "gind_first_4", "gvkey", "treated_10","mkvalt",
                           "sales_growth_calculated","loan_banks_total", "oth_inv_delta_calculated")
+columns_to_winsorize = c("cf_calculated", "m_b_calculated",
+                         "sales_growth_calculated","ppent_calculated", "lev_calculated","roa","capx","oth_inv_delta_calculated",
+                         "other_inv_sum_calculated","ch_calculated", "at","age")
+
+winsorize_dataframe <- function(data, column_names) {
+  for (col_name in column_names) {
+    col_values <- data[[col_name]]
+    q1 <- quantile(col_values, probs = 0.001)
+    q99 <- quantile(col_values, probs = 0.999)
+
+    data <- data[col_values >= q1 & col_values <= q99, ]
+
+  }
+
+  return(data)
+}
 
 calculate_means2 <- function(input_df, columns) {
   # Convert all columns to numeric
@@ -52,9 +68,9 @@ match_basis = calculate_means2(input_df = match_basis, columns = columns_for_mat
 matched_data = data_frame()
 
 
-ps_match <- matchit(treated_10 ~ cf_calculated + m_b_calculated +sales_growth_calculated+
+ps_match <- matchit(treated_10 ~cf_calculated + m_b_calculated +sales_growth_calculated+
                       ppent_calculated + lev_calculated+ ch_calculated+roa+
-                      oth_inv_delta_calculated + at+ capx+age+
+                      oth_inv_delta_calculated + capx+age+
                       factor(gind_first_4)
                     , data = match_basis,
                     method = "nearest", distance = "logit")
@@ -64,11 +80,12 @@ matched_data = match.data(ps_match)
 remapped_matching_observations <- data %>% filter(gvkey %in% matched_data$gvkey)
 
 remapped_matching_observations = subset(remapped_matching_observations, year >= 2005 & year <= 2020)
+remapped_matching_observations = winsorize_dataframe(remapped_matching_observations, columns_to_winsorize)
 
 write.csv(remapped_matching_observations, file = "/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/matched_data_robust_10.csv", row.names = FALSE)
 
 
-rm(list = ls())
+#rm(list = ls())
 
 
 
@@ -95,6 +112,12 @@ columns_for_matching =  c("ln_sales_calculated", "cf_calculated" ,"m_b_calculate
                           "ppent_calculated" ,"lev_calculated", "ch_calculated","at","age",
                           "r_d_change_intensity", "gind_first_4", "gvkey", "treated_12","mkvalt",
                           "sales_growth_calculated","loan_banks_total", "oth_inv_delta_calculated")
+columns_to_winsorize = c("cf_calculated", "m_b_calculated",
+                         "sales_growth_calculated","ppent_calculated", "lev_calculated","roa","capx","oth_inv_delta_calculated",
+                         "other_inv_sum_calculated","ch_calculated", "at","age")
+
+
+
 
 calculate_means2 <- function(input_df, columns) {
   # Convert all columns to numeric
@@ -131,7 +154,7 @@ matched_data = data_frame()
 
 ps_match <- matchit(treated_12 ~ cf_calculated + m_b_calculated +sales_growth_calculated+
                       ppent_calculated + lev_calculated+ ch_calculated+roa+
-                      oth_inv_delta_calculated + at+ capx+age+
+                      oth_inv_delta_calculated + capx+age+
                       factor(gind_first_4)
                     , data = match_basis,
                     method = "nearest", distance = "logit")
@@ -142,5 +165,6 @@ matched_data = match.data(ps_match)
 remapped_matching_observations <- data %>% filter(gvkey %in% matched_data$gvkey)
 
 remapped_matching_observations = subset(remapped_matching_observations, year >= 2005 & year <= 2020)
+remapped_matching_observations = winsorize_dataframe(remapped_matching_observations, columns_to_winsorize)
 
 write.csv(remapped_matching_observations, file = "/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/matched_data_robust_12.csv", row.names = FALSE)

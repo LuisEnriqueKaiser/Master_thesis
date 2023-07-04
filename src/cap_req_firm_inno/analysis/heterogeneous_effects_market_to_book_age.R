@@ -1,4 +1,4 @@
-#  heterogeneous effects for young and mature firms
+#  heterogenous effects for young and mature firms
 
 data = read.csv("/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/matched_data.csv")
 

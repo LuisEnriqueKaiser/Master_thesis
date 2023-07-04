@@ -1,4 +1,5 @@
 #library("tidyverse")
+rm(list = ls())
 library("plm")
 data = read.csv("/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/matched_data.csv")
 tr_year = 2011
@@ -11,17 +12,15 @@ data = data.frame(data)
 # Specify the subset of columns for complete cases check
 subset_columns <- c("lead1_r_d_intensity_sale", "did", "ln_sales_calculated", "cf_calculated", "m_b_calculated",
                     "sales_growth_calculated","ppent_calculated", "lev_calculated","roa","capx",
-                    "oth_inv_delta_calculated","ch_calculated", "at","age" )
+                    "oth_inv_delta_calculated","ch_calculated", "at","age", "gvkey", "year", "other_inv_sum_calculated")
 
 # Remove rows with missing values only in the subset columns
 
 subset_reg1 <- data[complete.cases(data[, subset_columns]), ]
+subset_reg1 = subset(subset_reg1,  select=subset_columns)
 subset_reg1 = subset_reg1[apply(subset_reg1, 1, function(row) all(is.finite(row))),]
 
 did_reg_lead1_rd_sale = plm(lead1_r_d_intensity_sale ~   did +
-               cf_calculated + m_b_calculated +sales_growth_calculated+
-               ppent_calculated + lev_calculated+ ch_calculated+roa+age+
-               other_inv_sum_calculated + at+ capx+age+
                factor(year) + factor(gvkey),
              model = "within",
              index = c("gvkey", "year"),
@@ -40,17 +39,15 @@ print(summary(did_reg_lead1_rd_sale))
 # Specify the subset of columns for complete cases check
 subset_columns <- c("lead1_r_d_rq", "did", "ln_sales_calculated", "cf_calculated", "m_b_calculated",
                     "sales_growth_calculated","ppent_calculated", "lev_calculated","roa","capx",
-                    "oth_inv_delta_calculated","ch_calculated", "at","age" )
+                    "oth_inv_delta_calculated","ch_calculated", "at","age", "gvkey", "year", "other_inv_sum_calculated")
 
 # Remove rows with missing values only in the subset columns
 
 subset_reg1 <- data[complete.cases(data[, subset_columns]), ]
+subset_reg1 = subset(subset_reg1,  select=subset_columns)
 subset_reg1 = subset_reg1[apply(subset_reg1, 1, function(row) all(is.finite(row))),]
-
+summary(subset_reg1)
 did_reg_lead1_r_d_rq= plm(lead1_r_d_rq ~   did +
-               cf_calculated + m_b_calculated +sales_growth_calculated+
-               ppent_calculated + lev_calculated+ ch_calculated+roa+age+
-               other_inv_sum_calculated + at+ capx+age+
                factor(year) + factor(gvkey),
              model = "within",
              index = c("gvkey", "year"),
@@ -75,9 +72,6 @@ subset_reg1 <- data[complete.cases(data[, subset_columns]), ]
 subset_reg1 = subset_reg1[apply(subset_reg1, 1, function(row) all(is.finite(row))),]
 
 did_reg_lead2_r_d_rq= plm(lead2_r_d_rq ~   did +
-               cf_calculated + m_b_calculated +sales_growth_calculated+
-               ppent_calculated + lev_calculated+ ch_calculated+roa+age+
-               other_inv_sum_calculated + at+ capx+age+
                factor(year) + factor(gvkey),
              model = "within",
              index = c("gvkey", "year"),
@@ -144,21 +138,16 @@ data$did = data$post * data$treated_10
 
 
 # Specify the subset of columns for complete cases check
-subset_columns <- c("lead1_r_d_intensity", "did", "ln_sales_calculated", "cf_calculated", "m_b_calculated",
-                    "sales_growth_calculated","ppent_calculated", "lev_calculated","roa","capx","age",
-                    "oth_inv_delta_calculated","ch_calculated", "at" )
+subset_columns <- c("lead1_r_d_intensity", "did","year", "gvkey" )
 
 
 # Remove rows with missing values only in the subset columns
 subset_reg1 <- data[complete.cases(data[, subset_columns]), ]
-subset_reg1 = subset_reg1[apply(subset_reg1, 1, function(row) all(is.finite(row))),]
-
+#subset_reg1 = subset_reg1[apply(subset_reg1, 1, function(row) all(is.finite(row))),]
+summary(subset_reg1)
 
 
 did_reg_lead_1_tr_10 = plm(lead1_r_d_intensity ~  did +
-                       cf_calculated + m_b_calculated +sales_growth_calculated+
-                       ppent_calculated + lev_calculated+ ch_calculated+roa+
-                       other_inv_sum_calculated + at+ capx+age+
                        factor(year) + factor(gvkey),
                      model = "within",
                      index = c("gvkey", "year"),
@@ -175,13 +164,10 @@ subset_columns <- c("lead2_r_d_intensity", "did", "ln_sales_calculated", "cf_cal
 
 # Remove rows with missing values only in the subset columns
 subset_reg2 <- data[complete.cases(data[, subset_columns]), ]
-subset_reg2 = subset_reg2[apply(subset_reg2, 1, function(row) all(is.finite(row))),]
+#subset_reg2 = subset_reg2[apply(subset_reg2, 1, function(row) all(is.finite(row))),]
 
 
 did_reg_lead_2_tr_10 = plm(lead2_r_d_intensity ~  did +
-                       cf_calculated + m_b_calculated +sales_growth_calculated+
-                       ppent_calculated + lev_calculated+ ch_calculated+roa+
-                       other_inv_sum_calculated + at+ capx+age+
                        factor(year) + factor(gvkey),
                      model = "within",
                      index = c("gvkey", "year"),
@@ -189,7 +175,6 @@ did_reg_lead_2_tr_10 = plm(lead2_r_d_intensity ~  did +
                      data = subset_reg2)
 
 print(summary(did_reg_lead_2_tr_10))
-
 
 
 
@@ -206,6 +191,7 @@ print(summary(did_reg_lead_2_tr_10))
 
 library("tidyverse")
 library("plm")
+
 data = read.csv("/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/matched_data_robust_12.csv")
 tr_year = 2011
 data$post <- ifelse(data$year > tr_year, 1, 0)
@@ -220,19 +206,16 @@ subset_columns <- c("lead1_r_d_intensity", "did", "ln_sales_calculated", "cf_cal
 
 # Remove rows with missing values only in the subset columns
 subset_reg1 <- data[complete.cases(data[, subset_columns]), ]
-subset_reg1 = subset_reg1[apply(subset_reg1, 1, function(row) all(is.finite(row))),]
+#subset_reg1 = subset_reg1[apply(subset_reg1, 1, function(row) all(is.finite(row))),]
 
 
 
 did_reg_lead_1_tr_12 = plm(lead1_r_d_intensity ~  did +
-                       cf_calculated + m_b_calculated +sales_growth_calculated+
-                       ppent_calculated + lev_calculated+ ch_calculated+roa+
-                       other_inv_sum_calculated + at+ capx+age+
                        factor(year) + factor(gvkey),
                      model = "within",
                      index = c("gvkey", "year"),
                      vcov = function(x) vcovHC(x, cluster = "gind_first_4"),
-                     data = subset_reg1)
+                     data = data)
 
 print(summary(did_reg_lead_1_tr_12))
 
@@ -244,13 +227,10 @@ subset_columns <- c("lead2_r_d_intensity", "did", "ln_sales_calculated", "cf_cal
 
 # Remove rows with missing values only in the subset columns
 subset_reg2 <- data[complete.cases(data[, subset_columns]), ]
-subset_reg2 = subset_reg2[apply(subset_reg2, 1, function(row) all(is.finite(row))),]
+#subset_reg2 = subset_reg2[apply(subset_reg2, 1, function(row) all(is.finite(row))),]
 
 
 did_reg_lead_2_tr_12 = plm(lead2_r_d_intensity ~  did +
-                       cf_calculated + m_b_calculated +sales_growth_calculated+
-                       ppent_calculated + lev_calculated+ ch_calculated+roa+
-                       other_inv_sum_calculated + at+ capx+age+
                        factor(year) + factor(gvkey),
                      model = "within",
                      index = c("gvkey", "year"),
