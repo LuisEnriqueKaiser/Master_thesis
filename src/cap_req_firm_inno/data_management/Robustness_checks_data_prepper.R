@@ -1,6 +1,6 @@
 # this script performs preliminary data cleaning, matching of control and treatment group through the propensity score
 # matching algorithm.
-
+rm(list = ls())
 
 # Load necessary libraries
 library("MatchIt")  # For propensity score matching
@@ -13,14 +13,16 @@ data = read.csv("/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed
 
 
 
-columns_for_matching =  c("ln_sales_calculated", "cf_calculated" ,"m_b_calculated",
-                          "other_inv_sum_calculated", "capx","ebitda","roa","xrd","r_d_intensity",
-                          "ppent_calculated" ,"lev_calculated", "ch_calculated","at","age",
-                          "r_d_change_intensity", "gind_first_4", "gvkey", "treated_10","mkvalt",
-                          "sales_growth_calculated","loan_banks_total", "oth_inv_delta_calculated")
 columns_to_winsorize = c("cf_calculated", "m_b_calculated",
                          "sales_growth_calculated","ppent_calculated", "lev_calculated","roa","capx","oth_inv_delta_calculated",
                          "other_inv_sum_calculated","ch_calculated", "at","age")
+
+
+columns_for_matching =  c("ln_sales_calculated", "cf_calculated" ,"m_b_calculated","net_change_capital",
+                          "other_inv_sum_calculated", "capx","ebitda","roa","xrd","r_d_intensity","nr_of_lenders_pretreatment_period",
+                          "ppent_calculated" ,"lev_calculated", "ch_calculated","at","age","avg_maturity_per_year",
+                          "r_d_change_intensity", "gind_first_4", "gvkey", "treated","mkvalt","tr_lender_share",
+                          "sales_growth_calculated", "oth_inv_delta_calculated", "treated_10")
 
 winsorize_dataframe <- function(data, column_names) {
   for (col_name in column_names) {
@@ -63,29 +65,32 @@ calculate_means2 <- function(input_df, columns) {
 match_basis = subset(data,year<=2011)
 match_basis = subset(match_basis, year >2007)
 match_basis = calculate_means2(input_df = match_basis, columns = columns_for_matching)
-
-
 matched_data = data_frame()
 
-
-ps_match <- matchit(treated_10 ~cf_calculated + m_b_calculated +sales_growth_calculated+
-                      ppent_calculated + lev_calculated+ ch_calculated+roa+
-                      oth_inv_delta_calculated + capx+age+
+# matching core 
+ps_match <- matchit(treated_10 ~other_inv_sum_calculated+lev_calculated+ch_calculated+
+                      sales_growth_calculated+m_b_calculated+net_change_capital+
                       factor(gind_first_4)
                     , data = match_basis,
                     method = "nearest", distance = "logit")
 matched_data = match.data(ps_match)
-# remap the matched observations
 
+# remap the matched observations
 remapped_matching_observations <- data %>% filter(gvkey %in% matched_data$gvkey)
 
 remapped_matching_observations = subset(remapped_matching_observations, year >= 2005 & year <= 2020)
-remapped_matching_observations = winsorize_dataframe(remapped_matching_observations, columns_to_winsorize)
+#remapped_matching_observations = winsorize_dataframe(remapped_matching_observations, columns_to_winsorize)
 
 write.csv(remapped_matching_observations, file = "/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/matched_data_robust_10.csv", row.names = FALSE)
 
 
-#rm(list = ls())
+
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+
+rm(list = ls())
 
 
 
@@ -106,15 +111,18 @@ set.seed(123)  # Set seed for reproducibility
 data = read.csv("/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/data_prepared_for_matching.csv")
 
 
-
-columns_for_matching =  c("ln_sales_calculated", "cf_calculated" ,"m_b_calculated",
-                          "other_inv_sum_calculated", "capx","ebitda","roa","xrd","r_d_intensity",
-                          "ppent_calculated" ,"lev_calculated", "ch_calculated","at","age",
-                          "r_d_change_intensity", "gind_first_4", "gvkey", "treated_12","mkvalt",
-                          "sales_growth_calculated","loan_banks_total", "oth_inv_delta_calculated")
 columns_to_winsorize = c("cf_calculated", "m_b_calculated",
                          "sales_growth_calculated","ppent_calculated", "lev_calculated","roa","capx","oth_inv_delta_calculated",
                          "other_inv_sum_calculated","ch_calculated", "at","age")
+
+
+
+
+columns_for_matching =  c("ln_sales_calculated", "cf_calculated" ,"m_b_calculated","net_change_capital",
+                          "other_inv_sum_calculated", "capx","ebitda","roa","xrd","r_d_intensity","nr_of_lenders_pretreatment_period",
+                          "ppent_calculated" ,"lev_calculated", "ch_calculated","at","age","avg_maturity_per_year",
+                          "r_d_change_intensity", "gind_first_4", "gvkey", "treated","mkvalt","tr_lender_share",
+                          "sales_growth_calculated", "oth_inv_delta_calculated", "treated_12") 
 
 
 
@@ -152,9 +160,8 @@ match_basis = calculate_means2(input_df = match_basis, columns = columns_for_mat
 matched_data = data_frame()
 
 
-ps_match <- matchit(treated_12 ~ cf_calculated + m_b_calculated +sales_growth_calculated+
-                      ppent_calculated + lev_calculated+ ch_calculated+roa+
-                      oth_inv_delta_calculated + capx+age+
+ps_match <- matchit(treated_12 ~ other_inv_sum_calculated+lev_calculated+ch_calculated+
+                      sales_growth_calculated+m_b_calculated+net_change_capital+
                       factor(gind_first_4)
                     , data = match_basis,
                     method = "nearest", distance = "logit")
@@ -165,6 +172,5 @@ matched_data = match.data(ps_match)
 remapped_matching_observations <- data %>% filter(gvkey %in% matched_data$gvkey)
 
 remapped_matching_observations = subset(remapped_matching_observations, year >= 2005 & year <= 2020)
-remapped_matching_observations = winsorize_dataframe(remapped_matching_observations, columns_to_winsorize)
 
 write.csv(remapped_matching_observations, file = "/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/matched_data_robust_12.csv", row.names = FALSE)

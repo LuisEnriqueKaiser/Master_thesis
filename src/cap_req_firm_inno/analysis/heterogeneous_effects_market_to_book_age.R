@@ -1,7 +1,9 @@
-#  heterogenous effects for young and mature firms
+#  heterogenous effects for young and mature firms and for high m/b values and low m/b values
+# some housekeeping
+rm(list=ls())
+
 
 data = read.csv("/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/matched_data.csv")
-
 tr_year = 2011
 maturity_threshold = 8
 data$post <- ifelse(data$year > tr_year, 1, 0)
@@ -36,47 +38,61 @@ immature_firms = subset(data, data$maturity == 0)
 
 
 mature_firms_did = plm(lead1_r_d_intensity ~  did +
-                       cf_calculated + m_b_calculated +sales_growth_calculated+
-                       ppent_calculated + lev_calculated+ ch_calculated+roa+
-                       other_inv_sum_calculated + at+ capx+age+
                        factor(year) + factor(gvkey),
                      model = "within",
                      index = c("gvkey", "year"),
-                     vcov = function(x) vcovHC(x, cluster = "gind_first_4"),
                      data = mature_firms)
 
 
 print(summary(mature_firms_did))
+cluster_var <- mature_firms$subclass
+vcov_cluster <- vcovHC(mature_firms_did, cluster = "group", cluster.by = cluster_var)
+mature_firms_did$vcov <- vcov_cluster
+print(summary(mature_firms_did))
+
+
 
 
 immature_firms_did = plm(lead1_r_d_intensity ~  did +
-                          cf_calculated + m_b_calculated +sales_growth_calculated+
-                          ppent_calculated + lev_calculated+ ch_calculated+roa+
-                          other_inv_sum_calculated + at+ capx+age+
                           factor(year) + factor(gvkey),
                         model = "within",
                         index = c("gvkey", "year"),
-                        vcov = function(x) vcovHC(x, cluster = "gind_first_4"),
                         data = immature_firms)
 
 print(summary(immature_firms_did))
+cluster_var <- immature_firms$subclass
+vcov_cluster <- vcovHC(immature_firms_did, cluster = "group", cluster.by = cluster_var)
+immature_firms_did$vcov <- vcov_cluster
+print(summary(immature_firms_did))
 
+immature_firms_treat = subset(immature_firms, immature_firms$treated == 1)
 
+mature_firms_treat = subset(mature_firms, mature_firms$treated == 1)
+
+mean(mature_firms$lead1_r_d_intensity, na.rm = TRUE)
+mean(immature_firms$lead1_r_d_intensity, na.rm = TRUE)
+
+mean(mature_firms_treat$lead1_r_d_intensity, na.rm = TRUE)
+mean(immature_firms_treat$lead1_r_d_intensity, na.rm = TRUE)
 
 
 
 stargazer(mature_firms_did, immature_firms_did,
-          dep.var.labels=c("R and D intensity_{t+1}"),
-          covariate.labels = c("Diff in Diff"),
+          dep.var.labels=c("R\\&D int_{t+1}"),
+          covariate.labels = c("Treat x Post"),
           omit.stat = c("f","adj.rsq"),
           font.size = "footnotesize",
-          column.sep.width = "1pt",
+          column.sep.width = "4pt",
           no.space=TRUE,
-          column.labels = c("Mature Firms", "Immature Firms"),
+          column.labels = c("Older Firms", "Younger Firms"),
           digits=3,
-          title = "Regression Results", align = TRUE, omit=c( "year","gvkey", "cf_calculated", "m_b_calculated", "sales_growth_calculated",
-                                                              "ppent_calculated", "lev_calculated", "ch_calculated", "roa",
-                                                              "other_inv_sum_calculated", "at","capx","age"),
+          add.lines = list(
+            c('Year fixed effects', str_pad("\\checkmark", 12, side = "left"), str_pad("\\checkmark", 20, side = "left")),
+            c('Firm fixed effects', str_pad("\\checkmark", 12, side = "left"), str_pad("\\checkmark", 12, side = "left"))), 
+          title = "Firm Age: \\newline 
+          
+          
+          ", align = FALSE, omit=c( "year","gvkey"),
           header = FALSE,type = "latex", out = "/Users/luisenriquekaiser/Documents/Master Thesis/Data/Regression_results/maturity_results.tex")
 
 
@@ -89,7 +105,12 @@ stargazer(mature_firms_did, immature_firms_did,
 ##############################################################################################################################
 
 
-
+#rm(list=ls())
+tr_year = 2011
+data = read.csv("/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/matched_data.csv")
+data$post <- ifelse(data$year > tr_year, 1, 0)
+data$did = data$post * data$treated
+median(data$m_b_calculated, na.rm = TRUE)
 # for the future, i want to include maybe the kaplan zingales score as a measurement of constrained firms and innovative firms
 data$m_b_group = NaN
 threshold_m_b_group = 1.5
@@ -103,45 +124,122 @@ high_market_to_book = subset(data, data$m_b_group == 1)
 low_market_to_book = subset(data, data$m_b_group == 0)
 
 high_market_to_book_did = plm(lead1_r_d_intensity ~  did +
-                           cf_calculated + m_b_calculated +sales_growth_calculated+
-                           ppent_calculated + lev_calculated+ ch_calculated+roa+
-                           other_inv_sum_calculated + at+ capx+age+
+                           factor(year) + factor(gvkey),
+                         model = "within",
+                         index = c("gvkey", "year"),
+                         data = high_market_to_book)
+
+print(summary(high_market_to_book_did))
+cluster_var <- high_market_to_book$subclass
+vcov_cluster <- vcovHC(high_market_to_book_did, cluster = "group", cluster.by = cluster_var)
+high_market_to_book_did$vcov <- vcov_cluster
+print(summary(high_market_to_book_did))
+
+high_market_to_book_tr = subset(high_market_to_book, high_market_to_book$treated == 1)
+mean(high_market_to_book_tr$lead1_r_d_intensity, na.rm=TRUE)
+
+
+low_market_to_book_did = plm(lead1_r_d_intensity ~  did +
+                                factor(year) + factor(gvkey),
+                              model = "within",
+                              index = c("gvkey", "year"),
+                              data = low_market_to_book)
+
+print(summary(low_market_to_book_did))
+cluster_var <- high_market_to_book$subclass
+vcov_cluster <- vcovHC(low_market_to_book_did, cluster = "group", cluster.by = cluster_var)
+low_market_to_book_did$vcov <- vcov_cluster
+print(summary(low_market_to_book_did))
+
+
+
+
+stargazer(mature_firms_did, immature_firms_did,high_market_to_book_did, low_market_to_book_did,
+          dep.var.labels=c("R\\&D int_{t+1}"),
+          covariate.labels = c("Treat x Post"),
+          omit.stat = c("f","adj.rsq"),
+          font.size = "footnotesize",
+          column.sep.width = "4pt",
+          no.space=TRUE,
+          column.labels = c("Older Firms", "Younger Firms", "High M/B", "Low M/B"),
+          digits=3,
+          add.lines = list(
+            c('Year fixed effects', str_pad("\\checkmark", 12, side = "left"), str_pad("\\checkmark", 20, side = "left"),str_pad("\\checkmark", 12, side = "left"),str_pad("\\checkmark", 12, side = "left")),
+            c('Firm fixed effects', str_pad("\\checkmark", 12, side = "left"), str_pad("\\checkmark", 12, side = "left"), str_pad("\\checkmark", 12, side = "left"),str_pad("\\checkmark", 12, side = "left"))), 
+          title = "Firm Age: \\newline This table reports results for subsample of the matched sample, based on firm age 
+          and market-to-book ratio. For firm age the first occurence in the Compustat dataset is set as the birthyear and age is computed accordingly. Firms which are
+          Firms, which are in the compustat dataset before 2006 are considered in the older group, while firms, which have their 
+          first occurence after 2006 are considered in the younger firms category. The results are reported in the first two columns. 
+          For the market-to-book ratio categorization, firms with a higher ", align = FALSE, omit=c( "year","gvkey"),
+          header = FALSE,type = "latex", out = "/Users/luisenriquekaiser/Documents/Master Thesis/Data/Regression_results/maturity_results.tex")
+
+
+
+
+
+# Loan Maturity dependence 
+
+
+rm(list = ls())
+library("plm")
+data = read.csv("/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/matched_data.csv")
+tr_year = 2011
+data$post <- ifelse(data$year > tr_year, 1, 0)
+data$did = data$post * data$treated
+
+lower_maturities = subset(data, data$avg_maturity_pre_tr<=44)
+higher_maturities = subset(data, data$avg_maturity_pre_tr>44) 
+median(data$avg_maturity_pre_tr)
+
+
+did_reg_lead_1_low = plm(lead1_r_d_intensity ~  did +
                            factor(year) + factor(gvkey),
                          model = "within",
                          index = c("gvkey", "year"),
                          vcov = function(x) vcovHC(x, cluster = "gind_first_4"),
-                         data = high_market_to_book)
+                         data = lower_maturities)
 
-print(summary(high_market_to_book_did))
-
-
-low_market_to_book = plm(lead1_r_d_intensity ~  did +
-                                cf_calculated + m_b_calculated +sales_growth_calculated+
-                                ppent_calculated + lev_calculated+ ch_calculated+roa+
-                                other_inv_sum_calculated + at+ capx+age+
-                                factor(year) + factor(gvkey),
-                              model = "within",
-                              index = c("gvkey", "year"),
-                              vcov = function(x) vcovHC(x, cluster = "gind_first_4"),
-                              data = low_market_to_book)
-
-print(summary(low_market_to_book))
+cluster_var <- lower_maturities$subclass
+vcov_cluster <- vcovHC(did_reg_lead_1_low, cluster = "group", cluster.by = cluster_var)
+did_reg_lead_1_low$vcov <- vcov_cluster
+print(summary(did_reg_lead_1_low))
 
 
+did_reg_lead_1_high = plm(lead1_r_d_intensity ~  did +
+                            factor(year) + factor(gvkey),
+                          model = "within",
+                          index = c("gvkey", "year"),
+                          vcov = function(x) vcovHC(x, cluster = "gind_first_4"),
+                          data = higher_maturities)
+
+cluster_var <- higher_maturities$subclass
+vcov_cluster <- vcovHC(did_reg_lead_1_high, cluster = "group", cluster.by = cluster_var)
+did_reg_lead_1_high$vcov <- vcov_cluster
+print(summary(did_reg_lead_1_high))
 
 
 
 
-stargazer(high_market_to_book_did, low_market_to_book,mature_firms_did, immature_firms_did,
-          dep.var.labels=c("R and D intensity_{t+1}"),
-          covariate.labels = c("Diff in Diff"),
+stargazer(did_reg_lead_1_low, did_reg_lead_1_high,
+          dep.var.labels=c("R\\&D int_{t+1}"),
+          covariate.labels = c("DiD"),
           omit.stat = c("f","adj.rsq"),
           font.size = "footnotesize",
-          column.sep.width = "1pt",
-          no.space=TRUE,
-          column.labels = c("High Market to Book ratio", "Low Market to Book ratio", "Mature Firms", "Immature Firms"),
+          column.labels = c("Lower Maturities Loans", "Higher Maturities Loans"),
+          column.sep.width = "4pt",
+          add.lines = list(
+            c('Year fixed effects', str_pad("\\checkmark", 12, side = "left"), str_pad("\\checkmark", 20, side = "left"), str_pad("\\checkmark", 12, side = "left"), str_pad("\\checkmark", 12, side = "left")),
+            c('Firm fixed effects', str_pad("\\checkmark", 12, side = "left"), str_pad("\\checkmark", 12, side = "left"), str_pad("\\checkmark", 12, side = "left"), str_pad("\\checkmark", 12, side = "left"))
+          ),
+          no.space=FALSE,
           digits=3,
-          title = "Regression Results", align = TRUE, omit=c( "year","gvkey", "cf_calculated", "m_b_calculated", "sales_growth_calculated",
-                                                              "ppent_calculated", "lev_calculated", "ch_calculated", "roa",
-                                                              "other_inv_sum_calculated", "at","capx","age"),
-          header = FALSE,type = "latex", out = "/Users/luisenriquekaiser/Documents/Master Thesis/Data/Regression_results/sec_het_effects.tex")
+          omit = c("year","gvkey") ,
+          title = "Loan Maturities \\newline Regression results for subsamples of the initial matched sample, based on the average loan maturity.
+          Samples are split based on the average pretreatment loan maturity for each firm. Firms, which are above the median pretreatment loan maturity
+          are in the high maturity group, and firms which are below the threshold are in the low maturity group.
+          All firms, with a mean makret-to-book ratio above 1.5 in the pre-treatment period are considered in the high market-to-book category, while
+          firms with a lower mean market-to-book ratio are considered in the lower market-to-book category. Results are reported on the two right columns.",
+          header = TRUE,type = "latex", out = "/Users/luisenriquekaiser/Documents/Master Thesis/Data/Regression_results/maturities_loans.tex")
+
+
+

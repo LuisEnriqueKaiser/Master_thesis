@@ -19,6 +19,8 @@ round_df <- function(df, digits) {
 
 prematched_data = read.csv("/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/data_prepared_for_matching.csv")
 postmatched_data = read.csv("/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/matched_data.csv")
+postmatched_data <- postmatched_data[, !(names(postmatched_data) %in% "subclass")]
+
 # Generate sample data
 set.seed(123)  # Set seed for reproducibility
 
@@ -85,6 +87,7 @@ stats_untreated_before =  stats_untreated_before %>%
 # compute statistics
 treated_postmatch = subset(postmatched_data,treated==1)
 untreated_postmatch = subset(postmatched_data, treated==0)
+
 stats_treated_after = compute_mean_sd(treated_postmatch)
 stats_treated_after = stats_treated_after %>%
   rename(
@@ -106,33 +109,39 @@ stats_summary$rownames <- rownames(stats_summary)
 #stats_summary = subset(stats_summary, stats_summary$rownames %in% columns_for_matching)
 
 stats = stats_summary
-used_list = c( "r_d_intensity", "ln_sales_calculated", "cf_calculated", "m_b_calculated",
-                    "sales_growth_calculated","ppent_calculated", "lev_calculated","roa","capx",
-                    "oth_inv_delta_calculated","ch_calculated", "at","age")
-
+used_list = c( "lead1_r_d_intensity", "other_inv_sum_calculated", "lev_calculated", "cf_calculated",
+                    "sales_growth_calculated","m_b_calculated", "net_change_capital","avg_maturity_per_year","age")
+names = c("R\\&D intensity_{t+1}", "Oth. inv. sum", "Leverage", "Cash Flow", "Sales Growth", "Market to Book ratio", "Net change capital",
+          "Average maturity per year", "Firm age")
 
 stats = subset(stats, stats$rownames %in% used_list)
 stats$diff_tr_untr_before = stats$untr_before_mean -stats$tr_before_mean
 stats$diff_tr_untr_atter = stats$untr_after_mean - stats$tr_after_mean
 
-stats = stats[,c(1,3,10,5,7,11)]
+
+stats = stats[,c(1,3,5,7)]
+
+# Change order of rows
+order_indices <- order(c(2, 3, 1, 4,5,6,7,8,9))  # Specify the desired order of row indices
+stats <- stats[order_indices, ]
+
+rownames(stats) <- c("R\\&D int._{t+1}", "Avg. maturity p. year","Firm age","Market to Book ratio",
+                     "Cash Flow","Sales Growth","Oth. inv. sum", "Leverage",  "Net change capital")
+
+
 stats_rounded = round_df(df = stats, digit = 2)
 
 stats_rounded = stats_rounded %>% rename( "Pre - Untr."= untr_before_mean)
 stats_rounded = stats_rounded %>% rename( "Pre - Tr."= tr_before_mean)
-stats_rounded = stats_rounded %>% rename( "Pre - Diff. "= diff_tr_untr_before)
+#stats_rounded = stats_rounded %>% rename( "Pre - Diff. "= diff_tr_untr_before)
 stats_rounded = stats_rounded %>% rename( "Pos - Untr."= untr_after_mean)
 stats_rounded = stats_rounded %>% rename( "Pos - Tr."= tr_after_mean)
-stats_rounded = stats_rounded %>% rename( "Pos - Diff."= diff_tr_untr_atter)
-rownames(stats_rounded) <- c("capx","at","age","rd int", "ln sale",
-                             "m b", "cf", "ppent", "sales gr.", "lev", "roa",
-                             "ch", "oth inv delta")
+#stats_rounded = stats_rounded %>% rename( "Pos - Diff."= diff_tr_untr_atter)
 
 
 
-Hmisc::latex(stats_rounded,Title = "Mean values before and after matching",
+Hmisc::latex(stats_rounded,Title = "Mean values variables - before and after matching",caption="Description", center = "center",
              file="/Users/luisenriquekaiser/Documents/Master Thesis/Data/Regression_results/descriptives.tex")
-
 
 
 # Create the LaTeX table representation

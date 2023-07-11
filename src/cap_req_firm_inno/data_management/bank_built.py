@@ -1,16 +1,18 @@
-# this script
+# this script has to be executed first, since it creates the bank specific tables, you need later
 
 
 import pandas as pd
 
 
 def extract_unique_values(data, column):
+    '''Extracts unique values out of a column in a dataframe'''
     unique_values = data[column].unique()
     unique_df = pd.DataFrame({column: unique_values})
     return unique_df
 
 
 def process_dataframe(df, columns, threshold):
+    '''Creates the new treated column'''
     # Create a new column 'treated' with default value 0
     df2 = df
     df2["treated"] = 0
@@ -26,6 +28,7 @@ def process_dataframe(df, columns, threshold):
 
 
 def create_pivot(data, value):
+    '''Creates the pivot tables, I am using for the mapping onto the dealscan loan dataset'''
     data_pivot = pd.pivot_table(data, values=value, index="gvkey", columns="fyear")
     # Reset index to make gvkey a regular column
     data_pivot = data_pivot.reset_index()
@@ -46,11 +49,14 @@ banks_data_matching_table = pd.read_excel(
 # clean the data
 banks_data = banks_data.dropna(subset=["capr1"])
 banks_data = banks_data[banks_data["fic"] == "USA"]
-# matching table
+
+# matching table for legacy connection
 banks_data_matching_table_dict = banks_data_matching_table.set_index(["gvkey"])[
     "lcoid"
 ].to_dict()
+# match the lcoid banks
 banks_data["lcoid_banks"] = banks_data["gvkey"].map(banks_data_matching_table_dict)
+
 # Create a pivot table to reshape the data
 banks_data_pivot = pd.pivot_table(
     banks_data,
@@ -58,22 +64,26 @@ banks_data_pivot = pd.pivot_table(
     index="gvkey",
     columns="fyear",
 )
+
 # Reset index to make gvkey a regular column
 banks_data_pivot = banks_data_pivot.reset_index()
+
 # Rename the columns with 'capr1_' prefix
 banks_data_pivot.columns = ["gvkey"] + [
     "capr1_" + str(year) for year in banks_data_pivot.columns[1:]
 ]
+# get the treated column for a given threshold
 banks_data_pivot_res = process_dataframe(
     df=banks_data_pivot,
     columns=["capr1_2007", "capr1_2008", "capr1_2009", "capr1_2010", "capr1_2011"],
     threshold=8,
 )
+# save the dataframe
 banks_data_pivot_res.to_csv(
     "/Users/luisenriquekaiser/Documents/Master Thesis/Data/processed_data/pivot_banks.csv",
 )
-
-
+##########################################################################################
+# create the pivots for the 10 threshold
 banks_data_pivot = pd.pivot_table(
     banks_data,
     values="capr1",
@@ -91,7 +101,8 @@ banks_data_pivot_10_threshold = process_dataframe(
     columns=["capr1_2007", "capr1_2008", "capr1_2009", "capr1_2010", "capr1_2011"],
     threshold=10,
 )
-
+##########################################################################################
+# create the pivots for the 12 threshold
 
 banks_data_pivot = pd.pivot_table(
     banks_data,
@@ -111,7 +122,7 @@ banks_data_pivot_12_threshold = process_dataframe(
     threshold=12,
 )
 
-
+##########################################################################################
 banks_data_pivot_10_threshold.to_csv(
     "/Users/luisenriquekaiser/Documents/Master Thesis/Data/processed_data/pivot_banks10.csv",
 )
@@ -122,7 +133,7 @@ banks_data_pivot_12_threshold.to_csv(
 banks_data.to_csv(
     "/Users/luisenriquekaiser/Documents/Master Thesis/Data/processed_data/banks_data_processed.csv",
 )
-
+##########################################################################################
 
 # create pivot for total assets
 banks_data_assets_pivot = create_pivot(data=banks_data, value="at")
