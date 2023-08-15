@@ -1,22 +1,40 @@
-# Data prep: 
-# this script is intended to prepare the firm-level dataset for the matching process. 
+ # this script is intended to prepare the firm-level dataset for the matching process.
 
 # some housekeeping
 rm(list = ls())
 
 # required libraries
 library("dplyr")    # For data manipulation
+library("plm")
 
-# change the paths, if you try to reproduce 
+winsorize_dataframe <- function(data, column_names, v_d, v_u) {
+  # percentile winsorizing of data
+  for (col_name in column_names) {
+    col_values <- data[[col_name]]
+    q1 <- quantile(col_values, probs = v_d, na.rm = TRUE)
+    q99 <- quantile(col_values, probs = v_u, na.rm = TRUE)
+
+    data <- data[col_values > q1 & col_values <= q99, ]
+
+  }
+
+  return(data)
+}
+
+# change the paths, if you try to reproduce
 raw_data = read.csv("/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/final_firm_level_data.csv")
 
 # subset only used variables
-data = raw_data[c("gvkey","sale","nr_of_lenders_pretreatment_period","nr_of_treated_lenders_pretreatment_period", "treated_sum_before_8","treated","xrd","dp","ceq","prcc_c","csho", "dlc","dltt","treated", "treated_10", "treated_12","capx","r_d_rq",
-                  "aqc","at","ppent", "ch","ibc", "mkvalt", "year", "gind","ebitda","ni","firm_born","avg_maturity_per_year","avg_maturity_pre_tr",
-                  "mean_eps_pretreatment_bank", "banks_allowances_loan_mean_pretreatment", "banks_net_income_mean_pretreatment", "banks_assets_total_mean_pretreatment",
+data = raw_data[c("gvkey","sale","nr_of_lenders_pretreatment_period","nr_of_treated_lenders_pretreatment_period"
+                  , "treated_sum_before_8", "treated","xrd","dp","ceq",
+                  "prcc_c","csho", "dlc","dltt","treated", "treated_11", "treated_7","capx",
+                  "aqc","at","ppent", "ch","ibc", "mkvalt", "year", "gind","ebitda","ni","firm_born",
+                  "avg_maturity_per_year","avg_maturity_pre_tr",
+                  "mean_eps_pretreatment_bank",
+                  "banks_allowances_loan_mean_pretreatment", "banks_net_income_mean_pretreatment", "banks_assets_total_mean_pretreatment",
                   "dt", "cshi", "dcpstk")]
 
-# first checking, ensuring a full dataset for these variables. 
+# first checking, ensuring a full dataset for these variables.
 columns_to_check <- c("gvkey","sale","xrd","dp","ceq","prcc_c","csho", "dlc","dltt","treated","capx","ebitda","ni",
                         "aqc","at","ppent", "ch","ibc", "mkvalt", "year", "gind", "dt", "cshi", "dcpstk")
 
@@ -48,9 +66,9 @@ duplicated_rows <- duplicated(data[c("gvkey", "year")], by = c("gvkey", "year"))
 duplicate_data <- data[duplicated_rows, ]
 data <- data[!duplicated_rows, ]
 
-# create a paneldata dataframe. Age variable had to be created beforehand, since the 
-# datatype messes up the year variable, but it makes lag and lead variable much more 
-# easy to create 
+# create a paneldata dataframe. Age variable had to be created beforehand, since the
+# datatype messes up the year variable, but it makes lag and lead variable much more
+# easy to create
 data = pdata.frame(data,index=c("gvkey","year"))
 
 
@@ -78,13 +96,12 @@ data$r_d_intensity_sale = (data$xrd/data$sale) * 100
 
 data = subset(data, r_d_intensity < 100)
 data$lead1_r_d_intensity = plm::lead(data$r_d_intensity, 1)
+
 data$lead2_r_d_intensity = plm::lead(data$lead1_r_d_intensity, 1)
 
 data$lead1_r_d_intensity_sale =  plm::lead(data$r_d_intensity_sale, 1)
 data$lead2_r_d_intensity_sale =  plm::lead(data$r_d_intensity_sale, 2)
 
-data$lead1_r_d_rq = plm::lead(data$r_d_rq,1)
-data$lead2_r_d_rq = plm::lead(data$r_d_rq,2)
 
 
 
@@ -122,12 +139,17 @@ data$log_capx = log(data$capx)
 # delta other investments
 data$oth_inv_delta_calculated <- (data$other_inv_sum_calculated- data$lag1_oth_inv_sum) /data$lag1_at * 100
 
+
 # create the variables for the financial dependence variable
 
 data$delta_dt = data$dt        - data$dt_lag
 data$delta_cshi = data$cshi    - data$cshi_lag
 data$delta_dcpstk= data$dcpstk - data$dcpstk_lag
 data$net_change_capital = (data$delta_dt + data$delta_cshi * data$prcc_c + data$delta_dcpstk)/data$at
+# winsorize data
+columns_to_winsorize = c("lead1_r_d_intensity")
+data = winsorize_dataframe(data, columns_to_winsorize, v_d = 0.001, v_u = 0.99)
 
-# safe the prepared data for the matching process 
+
+# safe the prepared data for the matching process
 write.csv(data, file = "/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/data_prepared_for_matching.csv", row.names = FALSE)

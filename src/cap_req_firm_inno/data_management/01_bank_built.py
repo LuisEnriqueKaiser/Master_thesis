@@ -1,18 +1,18 @@
 # this script has to be executed first, since it creates the bank specific tables, you need later
 
-
 import pandas as pd
 
 
+# define necessary functions
 def extract_unique_values(data, column):
-    '''Extracts unique values out of a column in a dataframe'''
+    """Extracts unique values out of a column in a dataframe."""
     unique_values = data[column].unique()
     unique_df = pd.DataFrame({column: unique_values})
     return unique_df
 
 
 def process_dataframe(df, columns, threshold):
-    '''Creates the new treated column'''
+    """Creates the new treated column."""
     # Create a new column 'treated' with default value 0
     df2 = df
     df2["treated"] = 0
@@ -28,7 +28,9 @@ def process_dataframe(df, columns, threshold):
 
 
 def create_pivot(data, value):
-    '''Creates the pivot tables, I am using for the mapping onto the dealscan loan dataset'''
+    """Creates the pivot tables, I am using for the mapping onto the dealscan loan
+    dataset.
+    """
     data_pivot = pd.pivot_table(data, values=value, index="gvkey", columns="fyear")
     # Reset index to make gvkey a regular column
     data_pivot = data_pivot.reset_index()
@@ -96,10 +98,10 @@ banks_data_pivot = banks_data_pivot.reset_index()
 banks_data_pivot.columns = ["gvkey"] + [
     "capr1_" + str(year) for year in banks_data_pivot.columns[1:]
 ]
-banks_data_pivot_10_threshold = process_dataframe(
+banks_data_pivot_7_threshold = process_dataframe(
     df=banks_data_pivot,
     columns=["capr1_2007", "capr1_2008", "capr1_2009", "capr1_2010", "capr1_2011"],
-    threshold=10,
+    threshold=7,
 )
 ##########################################################################################
 # create the pivots for the 12 threshold
@@ -116,18 +118,20 @@ banks_data_pivot = banks_data_pivot.reset_index()
 banks_data_pivot.columns = ["gvkey"] + [
     "capr1_" + str(year) for year in banks_data_pivot.columns[1:]
 ]
-banks_data_pivot_12_threshold = process_dataframe(
+banks_data_pivot_11_threshold = process_dataframe(
     df=banks_data_pivot,
     columns=["capr1_2007", "capr1_2008", "capr1_2009", "capr1_2010", "capr1_2011"],
-    threshold=12,
+    threshold=11,
 )
 
+
 ##########################################################################################
-banks_data_pivot_10_threshold.to_csv(
-    "/Users/luisenriquekaiser/Documents/Master Thesis/Data/processed_data/pivot_banks10.csv",
+# save the data
+banks_data_pivot_7_threshold.to_csv(
+    "/Users/luisenriquekaiser/Documents/Master Thesis/Data/processed_data/pivot_banks7.csv",
 )
-banks_data_pivot_12_threshold.to_csv(
-    "/Users/luisenriquekaiser/Documents/Master Thesis/Data/processed_data/pivot_banks12.csv",
+banks_data_pivot_11_threshold.to_csv(
+    "/Users/luisenriquekaiser/Documents/Master Thesis/Data/processed_data/pivot_banks11.csv",
 )
 
 banks_data.to_csv(

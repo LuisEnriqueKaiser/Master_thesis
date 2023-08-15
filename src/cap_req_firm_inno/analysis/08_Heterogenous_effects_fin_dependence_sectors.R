@@ -5,6 +5,8 @@ library("tidyverse")
 library("plm")
 library("stargazer")
 library("sandwich")
+library("stringr")
+library("lmtest")
 
 
 tr_year = 2011
@@ -13,14 +15,18 @@ data = read.csv("/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed
 data$post <- ifelse(data$year > tr_year, 1, 0)
 data$did = data$post * data$treated
 
-
+tr = subset(data, data$treated==1)
+mean(tr$lead1_r_d_intensity)
+sd(tr$lead1_r_d_intensity, na.rm = TRUE)
 # to subset the data later, i save a copy
 data_base <- data
 
 # First for the financial dependent industries
 # only for financial dependent industries
 fin_dep_data = subset(data, data$fin_dependent_sector == 1)
-
+fin_dep_data_tr = subset(fin_dep_data, fin_dep_data$treated == 1)
+mean(fin_dep_data_tr$lead1_r_d_intensity, na.rm = TRUE)
+sd(fin_dep_data_tr$lead1_r_d_intensity, na.rm = TRUE)
 
 
 # Specify the subset of columns for complete cases check
@@ -75,8 +81,9 @@ print(sd(treated_non_fin_dep$lead1_r_d_intensity, na.rm = TRUE))
 
 # Building the latex table
 stargazer(did_reg_lead_1_fin_dependent, did_reg_lead_1_non_fin_sector,
+          label = "tab::fin_dep_res",
           dep.var.labels=c("R\\&D int_{t+1}"),
-          covariate.labels = c("Diff in Diff"),
+          covariate.labels = c("Post x Treat"),
           omit.stat = c("f","adj.rsq"),
           font.size = "footnotesize",
           column.sep.width = "1pt",
@@ -84,12 +91,15 @@ stargazer(did_reg_lead_1_fin_dependent, did_reg_lead_1_non_fin_sector,
           column.labels = c("High financial dependence", "Low financial dependence"),
           add.lines = list(
             c('Year fixed effects', str_pad("\\checkmark", 12, side = "left"), str_pad("\\checkmark", 12, side = "left")),
-            c('Firm fixed effects', str_pad("\\checkmark", 12, side = "left"),  str_pad("\\checkmark", 12, side = "left"))),
+            c('Firm fixed effects', str_pad("\\checkmark", 12, side = "left"),  str_pad("\\checkmark", 12, side = "left")),
+            c('Additional covariates', str_pad("No", 12, side = "left"), str_pad("No", 12, side = "left"))),
           digits=3,
-          title = "Industry level financial dependence: \\newline Regression results for subsamples of the initial sample.
-          Industry level financial dependence is computed, by using net change in capital. The 60\\% pecentile of net change 
-          in capital is used as the threshold values. All industries, defined by the first two digits of the GIND, which are above the
-          threshold in their mean are considered highly external finance dependent. All sectors, with mean net changes in capital below the
-          threshold are considered low external finance dependent.", 
+          title = "Industry level external finance dependence: \\newline Regression results for subsamples of the initial sample.
+          Industry-level financial dependence is computed by using net change in capital. The 70\\% percentile of net change
+          in capital of firms is used as the threshold value. All industries, defined by the first two digits of the General Industry Identifier (GIND), above the
+          threshold in their mean values before the treatment period, are considered highly external finance dependent. All sectors, with mean net changes in capital
+          below the threshold in the pre-treatment period, are considered low external finance dependent. Since firms are distributed asymmetrically
+          across industries, I could not ensure balanced datasets when considering a sector-based approach. The 70 \\% percentile ensured the most balanced dataset.
+          Standard errors are clustered across matched subclasses (firms).",
           omit=c( "year","gvkey"),
           header = FALSE,type = "latex", out = "/Users/luisenriquekaiser/Documents/Master Thesis/Data/Regression_results/fin_dependence_results_sector.tex")

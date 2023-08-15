@@ -10,26 +10,14 @@ library("dplyr")    # For data manipulation
 library("psych")
 library("xtable")
 
-winsorize_dataframe <- function(data, column_names) {
-  for (col_name in column_names) {
-    col_values <- data[[col_name]]
-    q1 <- quantile(col_values, probs = 0.001)
-    q99 <- quantile(col_values, probs = 0.999)
-    
-    data <- data[col_values >= q1 & col_values <= q99, ]
-    
-  }
-  
-  return(data)
-}
 
 calculate_means2 <- function(input_df, columns) {
   # Convert all columns to numeric
   input_df <- as.data.frame(lapply(input_df, as.numeric))
-  
+
   unique_gvkeys <- unique(input_df$gvkey)
   output_df <- data.frame(gvkey = unique_gvkeys)
-  
+
   for (col_name in columns) {
     if (col_name != "gvkey") {
       means <- aggregate(input_df[col_name], list(input_df$gvkey), mean)
@@ -42,7 +30,7 @@ calculate_means2 <- function(input_df, columns) {
       colnames(output_df)[colnames(output_df) == col_name] <- paste0(col_name)
     }
   }
-  
+
   return(output_df)
 }
 
@@ -52,14 +40,6 @@ set.seed(123)  # Set seed for reproducibility
 
 data = read.csv("/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/data_prepared_for_matching.csv")
 
-
-columns_to_winsorize = c("cf_calculated", "m_b_calculated",
-                         "sales_growth_calculated","ppent_calculated", "lev_calculated",
-                         "roa","capx","oth_inv_delta_calculated",
-                         "other_inv_sum_calculated","ch_calculated", "at","age")
-
-
-
 columns_for_matching =  c("ln_sales_calculated", "cf_calculated" ,"m_b_calculated","net_change_capital",
                            "other_inv_sum_calculated", "capx","ebitda","roa","xrd","r_d_intensity","nr_of_lenders_pretreatment_period",
                           "ppent_calculated" ,"lev_calculated", "ch_calculated","at","age","avg_maturity_per_year",
@@ -67,8 +47,6 @@ columns_for_matching =  c("ln_sales_calculated", "cf_calculated" ,"m_b_calculate
                           "sales_growth_calculated", "oth_inv_delta_calculated")
 # ensure data availability
 data <- data[complete.cases(data[, columns_for_matching]), ]
-
-
 # matching
 match_basis = subset(data,year<=2011)
 match_basis = subset(match_basis, year >=2008)
@@ -84,7 +62,5 @@ matched_data = match.data(ps_match)
 remapped_matching_observations <- data %>% filter(gvkey %in% matched_data$gvkey)
 remapped_matching_observations$subclass <- matched_data$subclass[match(remapped_matching_observations$gvkey, matched_data$gvkey)]
 remapped_matching_observations = subset(remapped_matching_observations, year >= 2008 & year <= 2016)
-#remapped_matching_observations = winsorize_dataframe(remapped_matching_observations, columns_to_winsorize)
 # saving
 write.csv(remapped_matching_observations, file = "/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/matched_data.csv", row.names = FALSE)
-

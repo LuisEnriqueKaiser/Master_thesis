@@ -1,19 +1,22 @@
 # financial dependence data prepper
-# this script computes the financial dependence variable, introduced by Amore et at. 
-# they had a certain process of splitting the data, which i am reproducing for my setup 
+# this script computes the financial dependence variable, introduced by Amore et at.
+# they had a certain process of splitting the data, which i am reproducing for my setup
 
-# I make certain changes to their setup, in particular I create the 
-# indicator variable on the firm level, 
+# I make certain changes to their setup, in particular I create the
+# indicator variable on the firm level,
 # rather than on the sector level
 
-# some housekeeping 
+# some housekeeping
 rm(list=ls())
 
-# required libraries 
+# required libraries
 library("tidyverse")
 library("plm")
 library("stargazer")
 library("sandwich")
+library("stringr")
+library("lmtest")
+
 
 tr_year = 2011
 data = read.csv("/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/matched_data.csv")
@@ -23,13 +26,15 @@ data$post <- ifelse(data$year > tr_year, 1, 0)
 data$did = data$post * data$treated
 
 data_pre_intervention = subset(data, year < tr_year)
-# median group is defined by the median pre intervention after 2006 
-threshold_fin_dep = quantile(data_pre_intervention$net_change_capital,0.65, na.rm = TRUE)
+# median group is defined by the median pre intervention after 2006
+threshold_fin_dep = quantile(data_pre_intervention$net_change_capital,0.7, na.rm = TRUE)
+
+# for each firm individually, is no longer used
 # Calculate the mean of net_change_capital for each gvkey
-group_means <- aggregate(net_change_capital ~ gvkey, data = data_pre_intervention, mean, na.rm = TRUE)
-# Merge the group means with the original dataframe
-data <- merge(data, group_means, by = "gvkey", suffixes = c("", "_mean"))
-data$fin_dependence_firms = ifelse(data$net_change_capital_mean>threshold_fin_dep, 1, 0)
+#group_means <- aggregate(net_change_capital ~ gvkey, data = data_pre_intervention, mean, na.rm = TRUE)
+# Merge the group means with the original dataframe#
+#data <- merge(data, group_means, by = "gvkey", suffixes = c("", "_mean"))
+#data$fin_dependence_firms = ifelse(data$net_change_capital_mean>threshold_fin_dep, 1, 0)
 
 ########################################################################
 ########################################################################

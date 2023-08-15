@@ -5,9 +5,8 @@
 library("MatchIt")  # For propensity score matching
 library("dplyr")    # For data manipulation
 library("psych")
-library(xtable)
-library(Hmisc)
-library(dplyr)
+library("xtable")
+library("Hmisc")
 
 round_df <- function(df, digits) {
   nums <- vapply(df, is.numeric, FUN.VALUE = logical(1))
@@ -119,7 +118,7 @@ stats$diff_tr_untr_before = stats$untr_before_mean -stats$tr_before_mean
 stats$diff_tr_untr_atter = stats$untr_after_mean - stats$tr_after_mean
 
 
-stats = stats[,c(1,3,5,7)]
+stats = stats[,c(1,2,3,4,5,6,7, 8)]
 
 # Change order of rows
 order_indices <- order(c(2, 3, 1, 4,5,6,7,8,9))  # Specify the desired order of row indices
@@ -131,16 +130,29 @@ rownames(stats) <- c("R\\&D int._{t+1}", "Avg. maturity p. year","Firm age","Mar
 
 stats_rounded = round_df(df = stats, digit = 2)
 
-stats_rounded = stats_rounded %>% rename( "Pre - Untr."= untr_before_mean)
-stats_rounded = stats_rounded %>% rename( "Pre - Tr."= tr_before_mean)
+stats_rounded = stats_rounded %>% rename( "(1)"= untr_before_mean)
+stats_rounded = stats_rounded %>% rename( "(2)"= untr_before_sd)
+
+stats_rounded = stats_rounded %>% rename( "(3)"= tr_before_mean)
+stats_rounded = stats_rounded %>% rename( "(4)"= tr_before_sd)
+
 #stats_rounded = stats_rounded %>% rename( "Pre - Diff. "= diff_tr_untr_before)
-stats_rounded = stats_rounded %>% rename( "Pos - Untr."= untr_after_mean)
-stats_rounded = stats_rounded %>% rename( "Pos - Tr."= tr_after_mean)
+stats_rounded = stats_rounded %>% rename( "(5)"= untr_after_mean)
+stats_rounded = stats_rounded %>% rename( "(6)"= untr_after_sd)
+
+stats_rounded = stats_rounded %>% rename( "(7)"= tr_after_mean)
+stats_rounded = stats_rounded %>% rename( "(8)"= tr_after_sd)
+
 #stats_rounded = stats_rounded %>% rename( "Pos - Diff."= diff_tr_untr_atter)
 
 
 
-Hmisc::latex(stats_rounded,Title = "Mean values variables - before and after matching",caption="Description", center = "center",
+Hmisc::latex(stats_rounded,Title = "Mean values variables - before and after matching",caption="Descriptive statistics for the unmatched and matched samples \\newline
+             Column (1): Mean untreated observations before matching; Column (2): Standard deviation untreated observations before matching; \\newline
+             Column (3): Mean treated observations before matching; Column (4): Standard deviation treated observations before matching; \\newline
+             Column (5): Mean untreated observations after matching; Column (6): Standard deviation untreated observations after matching; \\newline
+             Column (7): Mean treated observations after matching; Column (8): Standard deviation treated observations after matching. ",
+             center = "center",
              file="/Users/luisenriquekaiser/Documents/Master Thesis/Data/Regression_results/descriptives.tex")
 
 

@@ -5,12 +5,21 @@ import pandas as pd
 
 
 def subset_duplicates(dataframe, column):
+    """Creates a subset of duplicates in a dataset, based on one column.
+
+    Returns then the duplicate dataframe and the unique value dataframe. Only keeps the
+    first occurence, based on the specified column.
+
+    """
     duplicates = dataframe[dataframe.duplicated(subset=column, keep=False)]
     unique = dataframe.drop_duplicates(subset=column, keep=False)
     return duplicates, unique
 
 
 def group_duplicates(df, column):
+    """Group and sort duplicates within a pandas DataFrame based on a specified
+    column.
+    """
     df_sorted = df.sort_values(by=column)
     groups = df_sorted.groupby(column)
     result_list = []
@@ -31,6 +40,9 @@ def group_duplicates(df, column):
 
 
 def hashmapsearch(year, df_to_fill, df_for_dict, col_to_fill, col_to_search):
+    """Search for values in a dictionary and fill a DataFrame column based on the search
+    results.
+    """
     df_for_dict = df_for_dict[["gvkey", str(year)]]
     pivot = df_for_dict.set_index("gvkey")[str(year)].to_dict()
     df_to_fill[col_to_fill] = df_to_fill[df_to_fill["year"] == year][col_to_search].map(
@@ -39,6 +51,8 @@ def hashmapsearch(year, df_to_fill, df_for_dict, col_to_fill, col_to_search):
     # reunite the subset with the df_to_fill, with the new column then
     return df_to_fill
 
+
+# read in the data
 
 # legacy dealscan data on lenders
 lenders = pd.read_csv(
@@ -66,13 +80,15 @@ banks_data_matching_table = pd.read_excel(
     sheet_name="Compustat",
 )
 
+# take subset, which is needed from the lender dataset
 facid_bank_id = lenders[["FacilityID", "CompanyID"]]
 facid_bank_id["FacilityID"] = facid_bank_id["FacilityID"].astype(int)
 facid_bank_id["CompanyID"] = facid_bank_id["CompanyID"].astype(int)
 
-
+# create hashmap
 facid_bank_id_dict = facid_bank_id.set_index("FacilityID").T.to_dict("list")
 
+# double check the datatype
 count = 0
 for key in facid_bank_id_dict:
     try:
@@ -80,7 +96,7 @@ for key in facid_bank_id_dict:
     except:
         count += 1
 
-
+# search in the hashmap for the lenderid for a given loan package
 deals_firms["lenderid"] = deals_firms["FacilityID"].map(facid_bank_id_dict)
 deals_firms["year"] = deals_firms["FacilityStartDate"].astype(str).str[:4]
 deals_firms["year"] = deals_firms["year"].astype(int)
@@ -182,16 +198,18 @@ deals_firms = deals_firms.dropna(subset=["gvkey_lender_unique_matching"])
 
 
 # Connect to the bank dataset with the gvkeys
+
+# load in the data
 banks_data_pivot = pd.read_csv(
     "/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/pivot_banks.csv",
 )
 
-banks_data_pivot_10 = pd.read_csv(
-    "/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/pivot_banks10.csv",
+banks_data_pivot_7 = pd.read_csv(
+    "/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/pivot_banks7.csv",
 )
 
-banks_data_pivot_12 = pd.read_csv(
-    "/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/pivot_banks12.csv",
+banks_data_pivot_11 = pd.read_csv(
+    "/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/pivot_banks11.csv",
 )
 
 # assets total matching table
@@ -212,6 +230,7 @@ banks_allowances_loan = pd.read_csv(
     "/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/banks_data_loans_allowances_pivot.csv",
 )
 
+# create mean pretreatment values
 banks_eps["mean_pretreatment"] = banks_eps[
     ["2007", "2008", "2009", "2010", "2011"]
 ].mean(axis=1, skipna=True)
@@ -276,13 +295,8 @@ deals_firms["banks_assets_total_mean_pretreatment"] = deals_firms[
 ].map(banks_assets_total_dict)
 
 
-# for year in deals_firms["year"].unique():
-
-#    deals_firms = hashmapsearch(year = year, df_to_fill= deals_firms, df_for_dict=banks_assets_total,
-#    deals_firms = hashmapsearch(year = year, df_to_fill= deals_firms, df_for_dict=banks_net_income,
-# deals_firms = hashmapsearch(year = year, df_to_fill= deals_firms, df_for_dict=banks_eps,
-#    deals_firms = hashmapsearch(year = year, df_to_fill= deals_firms, df_for_dict=banks_allowances_loan,
-
+# map the treatment variable onto the loan level dataset. This is redundant, based
+# on duplicates, to improve on data availability
 
 banks_data_pivot_dict = banks_data_pivot.set_index("gvkey")["treated"].to_dict()
 
@@ -303,16 +317,6 @@ deals_firms["treated_chava_banks"] = deals_firms["gvkey_lender_unique_matching"]
 )
 
 
-banks_data_pivot_10_dict = banks_data_pivot_10.set_index("gvkey")["treated"].to_dict()
-deals_firms["treated_10"] = deals_firms["gvkey_lender_unique_matching"].map(
-    banks_data_pivot_10_dict,
-)
-
-banks_data_pivot_12_dict = banks_data_pivot_12.set_index("gvkey")["treated"].to_dict()
-deals_firms["treated_12"] = deals_firms["gvkey_lender_unique_matching"].map(
-    banks_data_pivot_12_dict,
-)
-
 deals_firms["treated"] = deals_firms["treated"].fillna(deals_firms["treated_duplis_1"])
 deals_firms["treated"] = deals_firms["treated"].fillna(deals_firms["treated_duplis_2"])
 deals_firms["treated"] = deals_firms["treated"].fillna(deals_firms["treated_duplis_3"])
@@ -320,6 +324,19 @@ deals_firms["treated"] = deals_firms["treated"].fillna(
     deals_firms["treated_chava_banks"],
 )
 
+
+# map the treatment variable for the alternative thresholds
+banks_data_pivot_7_dict = banks_data_pivot_7.set_index("gvkey")["treated"].to_dict()
+deals_firms["treated_7"] = deals_firms["gvkey_lender_unique_matching"].map(
+    banks_data_pivot_7_dict,
+)
+
+banks_data_pivot_11_dict = banks_data_pivot_11.set_index("gvkey")["treated"].to_dict()
+deals_firms["treated_11"] = deals_firms["gvkey_lender_unique_matching"].map(
+    banks_data_pivot_11_dict,
+)
+
+# save the data
 
 deals_firms.to_excel(
     "/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/deals.xlsx",
