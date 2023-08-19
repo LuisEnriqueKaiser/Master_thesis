@@ -1,6 +1,7 @@
 # some housekeeping
 rm(list=ls())
 
+# libraries
 library("tidyverse")
 library("plm")
 library("stargazer")
@@ -11,9 +12,9 @@ library("lmtest")
 
 
 # triple diff in diff fin dependence
+# loading data and preprocessing
 tr_year = 2011
 data = read.csv("/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/matched_data_prepared_for_fin_dependence_effects.csv")
-
 data$post <- ifelse(data$year > tr_year, 1, 0)
 data$did = data$post * data$treated
 
@@ -23,18 +24,20 @@ sd(tr$lead1_r_d_intensity, na.rm = TRUE)
 data_base <- data
 
 # Specify the subset of columns for complete cases check
-subset_columns <- c("lead1_r_d_intensity", "did", "gvkey", "year")
+subset_columns <- c("lead1_r_d_intensity", "did")
 
 # Remove rows with missing values only in the subset columns
 data <- data[complete.cases(data[, subset_columns]), ]
+
+
+# financial dependence triple diff in diff 
 triple_diff_in_diff_fin_sector = plm(lead1_r_d_intensity ~ did + post * factor(fin_dependent_sector)+ factor(fin_dependent_sector) * did +
                                        factor(gvkey) + factor(year),
                                      model = "within",
                                      index = c("gvkey", "year"),
                                      data = data)
 
-summary(triple_diff_in_diff_fin_sector)
-
+#clustering
 cluster_var <- data$subclass
 vcov_cluster <- vcovHC(triple_diff_in_diff_fin_sector, cluster = "group", cluster.by = cluster_var)
 triple_diff_in_diff_fin_sector$vcov <- vcov_cluster
@@ -42,16 +45,16 @@ print(summary(triple_diff_in_diff_fin_sector))
 
 
 
-
-
 # interaction market to book
 
+
+# data preprocessing and loading
 tr_year = 2011
 data = read.csv("/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/matched_data.csv")
 data$post <- ifelse(data$year > tr_year, 1, 0)
 data$did = data$post * data$treated
 median(data$m_b_calculated, na.rm = TRUE)
-# for the future, i want to include maybe the kaplan zingales score as a measurement of constrained firms and innovative firms
+#group creation
 data$m_b_group = NaN
 threshold_m_b_group = 1.5
 for(i in 1:nrow(data)) {       # for-loop over rows
@@ -59,40 +62,27 @@ for(i in 1:nrow(data)) {       # for-loop over rows
   data$m_b_group[i] = ifelse(mean(firm_before$m_b_calculated, na.rm = TRUE)>threshold_m_b_group, 1, 0)
 }
 
-
-
-
+# regression
 did_interaction_mb = plm(lead1_r_d_intensity ~ did*factor(m_b_group) + post * factor(m_b_group)+
                            factor(year) + factor(gvkey),
                          model = "within",
                          index = c("gvkey", "year"),
                          vcov = function(x) vcovHC(x, cluster = "subclass"),
                          data = data)
-
-print(summary(did_interaction_mb))
+#clustering
 cluster_var <- data$subclass
 vcov_cluster <- vcovHC(did_interaction_mb, cluster = "group", cluster.by = cluster_var)
 did_interaction_mb$vcov <- vcov_cluster
-
 print(summary(did_interaction_mb))
 
 
 # age
-
+# data preprocessing
 data = read.csv("/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/matched_data.csv")
 tr_year = 2011
 maturity_threshold = 8
 data$post <- ifelse(data$year > tr_year, 1, 0)
 data$did = data$post * data$treated
-
-
-percentile_threshold <- 99
-# Calculate the value corresponding to the percentile threshold
-threshold_value <- quantile(data$lead1_r_d_intensity, probs = percentile_threshold / 100, na.rm = TRUE)
-
-# Filter the dataset to remove observations above the threshold
-data <- data[data$lead1_r_d_intensity <= threshold_value, ]
-
 
 # maturity status
 data$maturity = NaN
@@ -115,9 +105,7 @@ for(i in 1:nrow(data)) {       # for-loop over rows
     ifelse(data$age[i]>=threshold_matureness+7,1,0),
     ifelse(data$age[i]>=threshold_matureness+8,1,0))
 }
-
-
-
+# regression
 did_interaction_age= plm(lead1_r_d_intensity ~ did*factor(maturity) + post * factor(maturity)+
                            factor(year) + factor(gvkey),
                          model = "within",
@@ -125,8 +113,7 @@ did_interaction_age= plm(lead1_r_d_intensity ~ did*factor(maturity) + post * fac
                          vcov = function(x) vcovHC(x, cluster = "subclass"),
                          data = data)
 
-print(summary(did_interaction_age))
-
+# clustering
 cluster_var <- data$subclass
 vcov_cluster <- vcovHC(did_interaction_age, cluster = "group", cluster.by = cluster_var)
 did_interaction_age$vcov <- vcov_cluster
@@ -134,30 +121,25 @@ print(summary(did_interaction_age))
 
 
 
-
-
-
-
-
-
-
 # loan maturity
 
+# data loading and preprocessing
 data = read.csv("/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/matched_data.csv")
 tr_year = 2011
 data$post <- ifelse(data$year > tr_year, 1, 0)
 data$did = data$post * data$treated
 
+# creating the deciding indicator variable
 data$loan_maturity = ifelse(data$avg_maturity_pre_tr<=45, 1, 0)
 
-
+# regression
 did_int_loan_maturity = plm(lead1_r_d_intensity ~  factor(loan_maturity) * did + factor(loan_maturity)*post+
                               factor(year) + factor(gvkey),
                             model = "within",
                             index = c("gvkey", "year"),
                             vcov = function(x) vcovHC(x, cluster = "subclass"),
                             data = data)
-
+#clustering
 cluster_var <- data$subclass
 vcov_cluster <- vcovHC(did_int_loan_maturity, cluster = "group", cluster.by = cluster_var)
 did_int_loan_maturity$vcov <- vcov_cluster
@@ -165,9 +147,6 @@ print(summary(did_int_loan_maturity))
 
 
 # build the latex table out of these 4 interactions
-
-
-
 
 
 stargazer(

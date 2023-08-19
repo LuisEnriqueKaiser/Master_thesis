@@ -1,8 +1,8 @@
 # This part here is the baseline regression with different threshold values, used as a robustness check
-
+# some housekeeping
 rm(list = ls())
 
-#library("tidyverse")
+# load libraries 
 library("plm")
 library("tidyverse")
 library("stargazer")
@@ -10,52 +10,44 @@ library("sandwich")
 library("stringr")
 library("lmtest")
 
+# load in data and preprocessing
 data = read.csv("/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/matched_data_robust_7.csv")
 tr_year = 2011
 data$post <- ifelse(data$year > tr_year, 1, 0)
 data$did = data$post * data$treated_7
 
-treated_data = subset(data, data$treated_7 == 1)
-mean(treated_data$lead1_r_d_intensity, na.rm = TRUE)
-
 # Specify the subset of columns for complete cases check
-subset_columns <- c("lead1_r_d_intensity", "did","year", "gvkey" )
-
+subset_columns <- c("lead1_r_d_intensity", "did")
 
 # Remove rows with missing values only in the subset columns
 subset_reg1 <- data[complete.cases(data[, subset_columns]), ]
-#subset_reg1 = subset_reg1[apply(subset_reg1, 1, function(row) all(is.finite(row))),]
 
+# regression
 did_reg_lead_1_tr_7 = plm(lead1_r_d_intensity ~  did +
                        factor(year) + factor(gvkey),
                      model = "within",
                      index = c("gvkey", "year"),
                      data = subset_reg1)
-
-print(summary(did_reg_lead_1_tr_7))
+#clustering
 cluster_var <- subset_reg1$subclass
 vcov_cluster <- vcovHC(did_reg_lead_1_tr_7, cluster = "group", cluster.by = cluster_var)
-# Perform coefficient test with clustered standard errors
 did_reg_lead_1_tr_7$vcov <- vcov_cluster
 print(summary(did_reg_lead_1_tr_7))
 
+# descriptives
+data_tr = subset(subset_reg1, subset_reg1$treated_7 == 1)
+mean(subset_reg1$lead1_r_d_intensity, na.rm = TRUE)
 
-data_tr = subset(subset_reg1, subset_reg1$treated == 1)
-mean(data_tr$lead1_r_d_intensity, na.rm =TRUE)
-# 3.445531
-sd(data_tr$lead1_r_d_intensity, na.rm =TRUE)
-# 5.347
 
+# nor for r&d in t+2
 # Specify the subset of columns for complete cases check
-subset_columns <- c("lead2_r_d_intensity", "did", "ln_sales_calculated", "cf_calculated", "m_b_calculated","roa","capx",
-                    "sales_growth_calculated","ppent_calculated",  "capx", "lev_calculated", "ch_calculated","at" )
-
+subset_columns <- c("lead2_r_d_intensity", "did")
 
 # Remove rows with missing values only in the subset columns
 subset_reg2 <- data[complete.cases(data[, subset_columns]), ]
-#subset_reg2 = subset_reg2[apply(subset_reg2, 1, function(row) all(is.finite(row))),]
 
 
+# regression
 did_reg_lead_2_tr_7 = plm(lead2_r_d_intensity ~  did +
                        factor(year) + factor(gvkey),
                      model = "within",
@@ -63,27 +55,24 @@ did_reg_lead_2_tr_7 = plm(lead2_r_d_intensity ~  did +
                      vcov = function(x) vcovHC(x, cluster = "gind_first_4"),
                      data = subset_reg2)
 
-print(summary(did_reg_lead_2_tr_7))
+#clustering
 cluster_var <- subset_reg2$subclass
 vcov_cluster <- vcovHC(did_reg_lead_2_tr_7, cluster = "group", cluster.by = cluster_var)
-# Perform coefficient test with clustered standard errors
 did_reg_lead_2_tr_7$vcov <- vcov_cluster
 print(summary(did_reg_lead_2_tr_7))
 
-data_tr = subset(subset_reg2, subset_reg2$treated == 1)
+data_tr = subset(subset_reg2, subset_reg2$treated_7 == 1)
+# descriptives
 mean(data_tr$lead1_r_d_intensity, na.rm =TRUE)
-# 3.505538
-sd(data_tr$lead1_r_d_intensity, na.rm =TRUE)
-# 5.65207
-##########################################################################################
-##########################################################################################
-##########################################################################################
-##########################################################################################
-##########################################################################################
-##########################################################################################
 
 
 
+##########################################################################################
+##########################################################################################
+##########################################################################################
+##########################################################################################
+##########################################################################################
+##########################################################################################
 
 library("tidyverse")
 library("plm")
@@ -104,41 +93,33 @@ subset_reg1 <- data[complete.cases(data[, subset_columns]), ]
 #subset_reg1 = subset_reg1[apply(subset_reg1, 1, function(row) all(is.finite(row))),]
 
 
-
+# regression
 did_reg_lead_1_tr_11 = plm(lead1_r_d_intensity ~  did +
                        factor(year) + factor(gvkey),
                      model = "within",
                      index = c("gvkey", "year"),
                      vcov = function(x) vcovHC(x, cluster = "gind_first_4"),
                      data = subset_reg1)
-
-print(summary(did_reg_lead_1_tr_11))
+# clustering
 cluster_var <- subset_reg1$subclass
 vcov_cluster <- vcovHC(did_reg_lead_1_tr_11, cluster = "group", cluster.by = cluster_var)
-
-# Perform coefficient test with clustered standard errors
 did_reg_lead_1_tr_11$vcov <- vcov_cluster
 print(summary(did_reg_lead_1_tr_11))
 
 
-data_tr = subset(subset_reg1, subset_reg1$treated == 1)
+# descriptives
+data_tr = subset(subset_reg1, subset_reg1$treated_11 == 1)
 mean(data_tr$lead1_r_d_intensity, na.rm =TRUE)
-# 3.335
-sd(data_tr$lead1_r_d_intensity, na.rm =TRUE)
-# 5.347
 
-
-
+# for research and development intensity in t+2 
 
 # Specify the subset of columns for complete cases check
 subset_columns <- c("lead2_r_d_intensity", "did" )
 
-
 # Remove rows with missing values only in the subset columns
 subset_reg2 <- data[complete.cases(data[, subset_columns]), ]
-#subset_reg2 = subset_reg2[apply(subset_reg2, 1, function(row) all(is.finite(row))),]
 
-
+# regression
 did_reg_lead_2_tr_11 = plm(lead2_r_d_intensity ~  did +
                        factor(year) + factor(gvkey),
                      model = "within",
@@ -146,22 +127,18 @@ did_reg_lead_2_tr_11 = plm(lead2_r_d_intensity ~  did +
                      vcov = function(x) vcovHC(x, cluster = "gind_first_4"),
                      data = subset_reg2)
 
-
-print(summary(did_reg_lead_2_tr_11))
+# clustering
 cluster_var <- subset_reg2$subclass
 vcov_cluster <- vcovHC(did_reg_lead_2_tr_11, cluster = "group", cluster.by = cluster_var)
-# Perform coefficient test with clustered standard errors
 did_reg_lead_2_tr_11$vcov <- vcov_cluster
 print(summary(did_reg_lead_2_tr_11))
 
 
-tr_tr_11 = subset(data, data$treated_11 == 1)
-mean(tr_tr_11$lead2_r_d_intensity, na.rm = TRUE)
-#3.881757
-sd(tr_tr_11$lead2_r_d_intensity, na.rm = TRUE)
-# 7.096537
+data_tr = subset(subset_reg2, subset_reg2$treated_11 == 1)
+mean(data_tr$lead2_r_d_intensity, na.rm = TRUE)
 
 
+# create the latex table
 stargazer(did_reg_lead_1_tr_7, did_reg_lead_2_tr_7, did_reg_lead_1_tr_11, did_reg_lead_2_tr_11,
           column.labels = c("7\\% threshold","7\\% threshold","11\\% threshold", "11\\% threshold"),
           label = "tab::res_robustness_threshold",
@@ -187,3 +164,4 @@ stargazer(did_reg_lead_1_tr_7, did_reg_lead_2_tr_7, did_reg_lead_1_tr_11, did_re
           header = FALSE,
           type = "latex",
           out = "/Users/luisenriquekaiser/Documents/Master Thesis/Data/Regression_results/rob_diff_thresholds.tex")
+

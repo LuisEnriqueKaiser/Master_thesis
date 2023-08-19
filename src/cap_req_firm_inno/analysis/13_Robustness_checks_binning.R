@@ -26,12 +26,9 @@ data_sub_50_set <- data_sub_50_set %>%
   filter(n_distinct(gvkey) > 1)
 data_sub_50_set$did = data_sub_50_set$post *data_sub_50_set$treated
 
-
+# descriptives
 mean_subset_1 = subset(data_sub_50_set,data_sub_50_set$treated == 1)
 mean(mean_subset_1$lead1_r_d_intensity, na.rm  = TRUE)
-# 2.198795
-sd(mean_subset_1$lead1_r_d_intensity, na.rm  = TRUE)
-# 1.87
 
 ## create the 50 % subset
 data_50_set <- data[data$treatment_lender_share_50 == 1 | data$treated == 0, ]
@@ -39,11 +36,10 @@ data_50_set <- data_50_set %>%
   group_by(subclass) %>%
   filter(n_distinct(gvkey) > 1)
 data_50_set$did = data_50_set$post *data_50_set$treatment_lender_share_50
+# descriptives
 mean_subset_2 = subset(data_50_set,data_50_set$treated == 1)
 mean(mean_subset_2$lead1_r_d_intensity, na.rm  = TRUE)
-#3.74
-sd(mean_subset_2$lead1_r_d_intensity, na.rm  = TRUE)
-# 5.77
+
 
 ## create the 100 % subset
 data_100_set <- data[data$treatment_lender_share_1 == 1 | data$treated == 0, ]
@@ -51,18 +47,17 @@ data_100_set <- data_100_set %>%
   group_by(subclass) %>%
   filter(n_distinct(gvkey) > 1)
 data_100_set$did = data_100_set$post * data_100_set$treatment_lender_share_1
+# descriptives 
 mean_subset_3 = subset(data_100_set,data_100_set$treated == 1)
 mean(mean_subset_3$lead1_r_d_intensity, na.rm  = TRUE)
-# 4.11
-sd(mean_subset_3$lead1_r_d_intensity, na.rm  = TRUE)
-# 6.58
+
 
 
 
 #####################################################################################
 
 #  sub 50 %
-
+# regression 
 did_reg_lead_1_sub_50 = plm(lead1_r_d_intensity ~  did +
                        factor(year) + factor(gvkey),
                      model = "within",
@@ -71,16 +66,15 @@ did_reg_lead_1_sub_50 = plm(lead1_r_d_intensity ~  did +
                      data = data_sub_50_set)
 
 
-print(summary(did_reg_lead_1_sub_50))
+#clustering
 cluster_var <- data_sub_50_set$subclass
 vcov_cluster <- vcovHC(did_reg_lead_1_sub_50, cluster = "group", cluster.by = cluster_var)
-# Perform coefficient test with clustered standard errors
 did_reg_lead_1_sub_50$vcov <- vcov_cluster
 print(summary(did_reg_lead_1_sub_50))
 
 
 # 50
-
+# regression 
 did_reg_lead_1_50 = plm(lead1_r_d_intensity ~  did +
                        factor(year) + factor(gvkey),
                      model = "within",
@@ -88,10 +82,9 @@ did_reg_lead_1_50 = plm(lead1_r_d_intensity ~  did +
                      vcov = function(x) vcovHC(x, cluster = "gind_first_4"),
                      data = data_50_set)
 
-print(summary(did_reg_lead_1_50))
+# clustering
 cluster_var <- data_50_set$subclass
 vcov_cluster <- vcovHC(did_reg_lead_1_50, cluster = "group", cluster.by = cluster_var)
-# Perform coefficient test with clustered standard errors
 did_reg_lead_1_50$vcov <- vcov_cluster
 print(summary(did_reg_lead_1_50))
 
@@ -99,22 +92,20 @@ print(summary(did_reg_lead_1_50))
 
 
 # 100
-
+# regression 
 did_reg_lead_1 = plm(lead1_r_d_intensity ~  did +
                        factor(year) + factor(gvkey),
                      model = "within",
                      index = c("gvkey", "year"),
                      vcov = function(x) vcovHC(x, cluster = "gind_first_4"),
                      data = data_100_set)
-
-print(summary(did_reg_lead_1))
+# clustering
 cluster_var <- data_100_set$subclass
 vcov_cluster <- vcovHC(did_reg_lead_1, cluster = "group", cluster.by = cluster_var)
-# Perform coefficient test with clustered standard errors
 did_reg_lead_1$vcov <- vcov_cluster
 print(summary(did_reg_lead_1))
 
-
+# create the latex table 
 stargazer(did_reg_lead_1_sub_50, did_reg_lead_1_50,did_reg_lead_1,
           label = "tab::rob_check_binning",
           dep.var.labels=c("R\\&D int_{t+1}"),

@@ -1,5 +1,6 @@
-# this script has to be executed first, since it creates the bank specific tables, you need later
+# this script takes the bank specific compustat data and creates some condensed information tables, used in later scripts
 
+# libraries
 import pandas as pd
 
 

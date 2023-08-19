@@ -1,13 +1,18 @@
 # descriptives table generating
+# this was the basis for the descriptive tables in the final thesis
+# in an earlier iteration, I created the tables automatically
+# outcommented parts are legacy of that, but are not important anymore.
 
+
+rm(list=ls())
 # Load necessary libraries
-
 library("MatchIt")  # For propensity score matching
 library("dplyr")    # For data manipulation
 library("psych")
 library("xtable")
 library("Hmisc")
 
+# rounding the numbers in a dataframe
 round_df <- function(df, digits) {
   nums <- vapply(df, is.numeric, FUN.VALUE = logical(1))
 
@@ -16,14 +21,7 @@ round_df <- function(df, digits) {
   (df)
 }
 
-prematched_data = read.csv("/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/data_prepared_for_matching.csv")
-postmatched_data = read.csv("/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/matched_data.csv")
-postmatched_data <- postmatched_data[, !(names(postmatched_data) %in% "subclass")]
-
-# Generate sample data
-set.seed(123)  # Set seed for reproducibility
-
-
+# this function calculates the mean and the standard deviation of a dataframe
 compute_mean_sd <- function(data) {
   # Convert data to numeric matrix
   data <- as.matrix(data, na.rm = TRUE)
@@ -37,33 +35,21 @@ compute_mean_sd <- function(data) {
 }
 
 
-calculate_means2 <- function(input_df, columns) {
-  # Convert all columns to numeric
-  input_df <- as.data.frame(lapply(input_df, as.numeric))
+# load in the data
+prematched_data = read.csv("/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/data_prepared_for_matching.csv")
+postmatched_data = read.csv("/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/matched_data.csv")
+postmatched_data <- postmatched_data[, !(names(postmatched_data) %in% "subclass")]
 
-  unique_gvkeys <- unique(input_df$gvkey)
-  output_df <- data.frame(gvkey = unique_gvkeys)
 
-  for (col_name in columns) {
-    if (col_name != "gvkey") {
-      means <- aggregate(input_df[col_name], list(input_df$gvkey), mean)
-      for (r in 1:nrow(means)){
-        if  ((is.infinite(means[r,2])) | (is.na(means[r,2])) | (is.nan(means[r,2]))){
-          means[r,2] <- mean(input_df[[col_name]][is.finite(input_df[[col_name]])], na.rm = TRUE)
-        }
-      }
-      output_df <- merge(output_df, means, by.x = "gvkey", by.y = "Group.1", all.x = TRUE)
-      colnames(output_df)[colnames(output_df) == col_name] <- paste0(col_name)
-    }
-  }
+# Generate sample data
+set.seed(123)  # Set seed for reproducibility
 
-  return(output_df)
-}
 
+# create statistics before matching
 treated_prematch = subset(prematched_data,treated==1)
 untreated_prematch = subset(prematched_data, treated==0)
 
-
+# create the mean and sd dataframe
 stats_treated_before = compute_mean_sd(treated_prematch)
 stats_treated_before = stats_treated_before %>%
   rename(
@@ -71,7 +57,7 @@ stats_treated_before = stats_treated_before %>%
     tr_before_sd = sd
   )
 
-
+# create the mean and sd dataframe 
 stats_untreated_before = compute_mean_sd(untreated_prematch)
 stats_untreated_before =  stats_untreated_before %>%
   rename(
@@ -83,10 +69,11 @@ stats_untreated_before =  stats_untreated_before %>%
 
 
 
-# compute statistics
+# compute statistics for after matching 
 treated_postmatch = subset(postmatched_data,treated==1)
 untreated_postmatch = subset(postmatched_data, treated==0)
 
+# create the mean and sd dataframe 
 stats_treated_after = compute_mean_sd(treated_postmatch)
 stats_treated_after = stats_treated_after %>%
   rename(
@@ -94,76 +81,66 @@ stats_treated_after = stats_treated_after %>%
     tr_after_sd = sd
   )
 
-
+# create the mean and sd dataframe 
 stats_untreated_after = compute_mean_sd(untreated_postmatch)
 stats_untreated_after = stats_untreated_after %>%
   rename(
     untr_after_mean = mean,
     untr_after_sd = sd
   )
+
+# cbind them together
 stats_summary = cbind(stats_untreated_before,stats_treated_before,stats_untreated_after,stats_treated_after)
 stats_summary$rownames <- rownames(stats_summary)
 
 
-#stats_summary = subset(stats_summary, stats_summary$rownames %in% columns_for_matching)
-
 stats = stats_summary
-used_list = c( "lead1_r_d_intensity", "other_inv_sum_calculated", "lev_calculated", "cf_calculated",
+# boil the dataframe down to my used variables
+used_list = c( "lead1_r_d_intensity", "other_inv_sum_calculated", "lev_calculated", "cf_calculated","ch_calculated",
                     "sales_growth_calculated","m_b_calculated", "net_change_capital","avg_maturity_per_year","age")
-names = c("R\\&D intensity_{t+1}", "Oth. inv. sum", "Leverage", "Cash Flow", "Sales Growth", "Market to Book ratio", "Net change capital",
+names = c("R\\&D intensity_{t+1}", "Oth. inv. sum", "Leverage", "Cash Flow","Cash", "Sales Growth", "Market to Book ratio", "Net change capital",
           "Average maturity per year", "Firm age")
 
 stats = subset(stats, stats$rownames %in% used_list)
-stats$diff_tr_untr_before = stats$untr_before_mean -stats$tr_before_mean
-stats$diff_tr_untr_atter = stats$untr_after_mean - stats$tr_after_mean
+
+mean(postmatched_data$other_inv_sum_calculated[is.finite(postmatched_data$other_inv_sum_calculated)], na.rm = TRUE)
+
+#stats$diff_tr_untr_before = stats$untr_before_mean -stats$tr_before_mean
+#stats$diff_tr_untr_atter = stats$untr_after_mean - stats$tr_after_mean
 
 
-stats = stats[,c(1,2,3,4,5,6,7, 8)]
+#stats = stats[,c(1,2,3,4,5,6,7, 8)]
 
 # Change order of rows
-order_indices <- order(c(2, 3, 1, 4,5,6,7,8,9))  # Specify the desired order of row indices
-stats <- stats[order_indices, ]
+#order_indices <- order(c(2, 3, 1, 4,5,6,7,8,9))  # Specify the desired order of row indices
+#stats <- stats[order_indices, ]
 
-rownames(stats) <- c("R\\&D int._{t+1}", "Avg. maturity p. year","Firm age","Market to Book ratio",
-                     "Cash Flow","Sales Growth","Oth. inv. sum", "Leverage",  "Net change capital")
+#rownames(stats) <- c("R\\&D int._{t+1}", "Avg. maturity p. year","Firm age","Market to Book ratio",
+#                     "Cash Flow","Cash","Sales Growth","Oth. inv. sum", "Leverage",  "Net change capital")
 
 
 stats_rounded = round_df(df = stats, digit = 2)
-
-stats_rounded = stats_rounded %>% rename( "(1)"= untr_before_mean)
-stats_rounded = stats_rounded %>% rename( "(2)"= untr_before_sd)
-
-stats_rounded = stats_rounded %>% rename( "(3)"= tr_before_mean)
-stats_rounded = stats_rounded %>% rename( "(4)"= tr_before_sd)
+stats_rounded
+#stats_rounded = stats_rounded %>% rename( "(1)"= untr_before_mean)
+#stats_rounded = stats_rounded %>% rename( "(2)"= untr_before_sd)
+#stats_rounded = stats_rounded %>% rename( "(3)"= tr_before_mean)
+#stats_rounded = stats_rounded %>% rename( "(4)"= tr_before_sd)
 
 #stats_rounded = stats_rounded %>% rename( "Pre - Diff. "= diff_tr_untr_before)
-stats_rounded = stats_rounded %>% rename( "(5)"= untr_after_mean)
-stats_rounded = stats_rounded %>% rename( "(6)"= untr_after_sd)
+#stats_rounded = stats_rounded %>% rename( "(5)"= untr_after_mean)
+#stats_rounded = stats_rounded %>% rename( "(6)"= untr_after_sd)
 
-stats_rounded = stats_rounded %>% rename( "(7)"= tr_after_mean)
-stats_rounded = stats_rounded %>% rename( "(8)"= tr_after_sd)
+#stats_rounded = stats_rounded %>% rename( "(7)"= tr_after_mean)
+#stats_rounded = stats_rounded %>% rename( "(8)"= tr_after_sd)
 
 #stats_rounded = stats_rounded %>% rename( "Pos - Diff."= diff_tr_untr_atter)
 
 
 
-Hmisc::latex(stats_rounded,Title = "Mean values variables - before and after matching",caption="Descriptive statistics for the unmatched and matched samples \\newline
-             Column (1): Mean untreated observations before matching; Column (2): Standard deviation untreated observations before matching; \\newline
-             Column (3): Mean treated observations before matching; Column (4): Standard deviation treated observations before matching; \\newline
-             Column (5): Mean untreated observations after matching; Column (6): Standard deviation untreated observations after matching; \\newline
-             Column (7): Mean treated observations after matching; Column (8): Standard deviation treated observations after matching. ",
-             center = "center",
-             file="/Users/luisenriquekaiser/Documents/Master Thesis/Data/Regression_results/descriptives.tex")
-
-
-# Create the LaTeX table representation
-#latex_table <- print(xtable(table_obj), include.rownames = TRUE)
-
-# Scale down the table uniformly
-#latex_table <- gsub("\\\\begin\\{tabular\\}\\{", "\\\\begin{tabular}{\\\\scalebox\\{0.9\\}{", latex_table)
-
-# Save LaTeX table to a file
-#output_file <- "/Users/luisenriquekaiser/Documents/Master Thesis/Data/Regression_results/descriptive_stats.tex"
-#writeLines(latex_table, output_file)
-
-write.csv(stats_summary, file = "/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/stats.csv", row.names = TRUE)
+#Hmisc::latex(stats_rounded,Title = "Mean values variables - before and after matching",caption="Descriptive statistics for the unmatched and matched samples \\newline
+#             Column (1): Mean untreated observations before matching; Column (2): Standard deviation untreated observations before matching; \\newline
+#             Column (3): Mean treated observations before matching; Column (4): Standard deviation treated observations before matching; \\newline
+#             Column (5): Mean untreated observations after matching; Column (6): Standard deviation untreated observations after matching; \\newline
+#             Column (7): Mean treated observations after matching; Column (8): Standard deviation treated observations after matching. ",
+#             center = "center",
+#             file="/Users/luisenriquekaiser/Documents/Master Thesis/Data/Regression_results/descriptives.tex")

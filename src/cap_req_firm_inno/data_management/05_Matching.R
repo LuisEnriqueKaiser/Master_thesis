@@ -1,16 +1,14 @@
 # this script performs preliminary data cleaning, matching of control and treatment group through the propensity score
 # matching algorithm.
-
 # some housekeeping
 rm(list = ls())
-
 # Load necessary libraries
 library("MatchIt")  # For propensity score matching
 library("dplyr")    # For data manipulation
 library("psych")
-library("xtable")
 
 
+# function creates pretreatment means for all variables given to it, except for the gvkey variable 
 calculate_means2 <- function(input_df, columns) {
   # Convert all columns to numeric
   input_df <- as.data.frame(lapply(input_df, as.numeric))
@@ -34,18 +32,15 @@ calculate_means2 <- function(input_df, columns) {
   return(output_df)
 }
 
-
-
 set.seed(123)  # Set seed for reproducibility
-
 data = read.csv("/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/data_prepared_for_matching.csv")
-
+# all columns possibly in the matched sample
 columns_for_matching =  c("ln_sales_calculated", "cf_calculated" ,"m_b_calculated","net_change_capital",
                            "other_inv_sum_calculated", "capx","ebitda","roa","xrd","r_d_intensity","nr_of_lenders_pretreatment_period",
                           "ppent_calculated" ,"lev_calculated", "ch_calculated","at","age","avg_maturity_per_year",
                            "r_d_change_intensity", "gind_first_4", "gvkey", "treated","mkvalt","tr_lender_share",
                           "sales_growth_calculated", "oth_inv_delta_calculated")
-# ensure data availability
+# ensure data availability, should not change anything, since it was already checked beforehand
 data <- data[complete.cases(data[, columns_for_matching]), ]
 # matching
 match_basis = subset(data,year<=2011)
@@ -58,9 +53,10 @@ ps_match <- matchit(treated ~ other_inv_sum_calculated+lev_calculated+ch_calcula
                     , data = match_basis,
                     method = "nearest", distance = "logit")
 matched_data = match.data(ps_match)
-# remapping
+# remapping to get panel data again
 remapped_matching_observations <- data %>% filter(gvkey %in% matched_data$gvkey)
 remapped_matching_observations$subclass <- matched_data$subclass[match(remapped_matching_observations$gvkey, matched_data$gvkey)]
 remapped_matching_observations = subset(remapped_matching_observations, year >= 2008 & year <= 2016)
 # saving
 write.csv(remapped_matching_observations, file = "/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/matched_data.csv", row.names = FALSE)
+

@@ -21,7 +21,7 @@ winsorize_dataframe <- function(data, column_names, v_d, v_u) {
   return(data)
 }
 
-# change the paths, if you try to reproduce
+#read in the data
 raw_data = read.csv("/Users/luisenriquekaiser/Documents/Master Thesis/Data/Processed_data/final_firm_level_data.csv")
 
 # subset only used variables
@@ -53,10 +53,9 @@ data$treatment_lender_share_50 = ifelse(data$tr_lender_share>= 0.5,1,0)
 data$treatment_lender_share_75 = ifelse(data$tr_lender_share>= 0.75,1,0)
 data$treatment_lender_share_1 =  ifelse(data$tr_lender_share== 1,1,0)
 
-# filling the still empty maturity variables
+# filling the still empty loan maturity variables
 data$avg_maturity_pre_tr[is.na(data$avg_maturity_pre_tr) | is.infinite(data$avg_maturity_pre_tr)] = 0
 data$avg_maturity_per_year[is.na(data$avg_maturity_per_year) | is.infinite(data$avg_maturity_per_year)] = 0
-
 
 # creating the age variable
 data$age <- as.integer(data$year) - as.integer(data$firm_born)
@@ -103,8 +102,6 @@ data$lead1_r_d_intensity_sale =  plm::lead(data$r_d_intensity_sale, 1)
 data$lead2_r_d_intensity_sale =  plm::lead(data$r_d_intensity_sale, 2)
 
 
-
-
 # create  change in r and d intensity
 data$r_d_change_intensity = data$r_d_intensity - (data$lag1_xrd/data$lag1_at*100)
 data$lead1_r_d_change_intensity = data$lead1_r_d_intensity - data$r_d_intensity
@@ -139,9 +136,7 @@ data$log_capx = log(data$capx)
 # delta other investments
 data$oth_inv_delta_calculated <- (data$other_inv_sum_calculated- data$lag1_oth_inv_sum) /data$lag1_at * 100
 
-
 # create the variables for the financial dependence variable
-
 data$delta_dt = data$dt        - data$dt_lag
 data$delta_cshi = data$cshi    - data$cshi_lag
 data$delta_dcpstk= data$dcpstk - data$dcpstk_lag

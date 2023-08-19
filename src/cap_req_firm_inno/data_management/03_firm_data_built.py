@@ -338,7 +338,8 @@ Firm_level_data["firm_born"] = Firm_level_data.groupby("gvkey")["year"].transfor
 )
 
 
-Firm_level_data = Firm_level_data[Firm_level_data["fyear"] < 2020]  # right timeframe
+# right timeframe
+Firm_level_data = Firm_level_data[Firm_level_data["fyear"] < 2020]
 Firm_level_data = Firm_level_data[Firm_level_data["fyear"] > 2005]
 # only observations with r&d expenditures are allowed
 Firm_level_data = Firm_level_data[Firm_level_data["xrd"].notna()]
@@ -390,7 +391,7 @@ Firm_level_data["treated_7"] = np.where(
     0,
 )
 
-
+# create treatment variable for the other thresholds
 Firm_level_data = calculate_treated_sum11(firm_df=Firm_level_data, deals_df=deals)
 Firm_level_data = Firm_level_data.dropna(subset=["treated_sum_before"])
 Firm_level_data["treated_sum_before_11"] = Firm_level_data["treated_sum_before"]

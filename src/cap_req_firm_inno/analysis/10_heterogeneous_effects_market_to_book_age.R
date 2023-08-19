@@ -16,7 +16,7 @@ data$post <- ifelse(data$year > tr_year, 1, 0)
 data$did = data$post * data$treated
 
 
-# maturity status
+# maturity status of firms
 data$maturity = NaN
 threshold_matureness = 20
 
@@ -153,7 +153,7 @@ print(summary(low_market_to_book_did))
 
 
 
-# make the latex
+# make the latex file
 stargazer(mature_firms_did, immature_firms_did,high_market_to_book_did, low_market_to_book_did,
           dep.var.labels=c("R\\&D int_{t+1}"),
           label = "tab::results_m_b",
@@ -179,3 +179,4 @@ stargazer(mature_firms_did, immature_firms_did,high_market_to_book_did, low_mark
           to-book ratio of 1.5 is the median for the matched sample.
           Standard errors are clustered across matched subclasses (firms).", align = FALSE, omit=c( "year","gvkey"),
           header = FALSE,type = "latex", out = "/Users/luisenriquekaiser/Documents/Master Thesis/Data/Regression_results/maturity_results.tex")
+

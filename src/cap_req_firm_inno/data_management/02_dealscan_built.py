@@ -1,6 +1,7 @@
 # this script connects the dealscan dataset with its lender part and the gvkey from banks and firms.
 # on top of that, it adds bank specific datapoints from the compustat bank dataset.
 
+# library
 import pandas as pd
 
 
@@ -135,7 +136,6 @@ deals_firms["gvkey_borrower"].isna().sum()
 
 
 # Match the GVKEYS for the banks with the corresponding lenderids
-
 deals_firms["FacilityStartDate"] = pd.to_datetime(deals_firms["FacilityStartDate"])
 banks_data_matching_table["year"] = (
     banks_data_matching_table["ds_start"].astype(str).str[:4]
@@ -197,7 +197,9 @@ deals_firms["gvkey_lender_unique_matching"] = deals_firms[
 deals_firms = deals_firms.dropna(subset=["gvkey_lender_unique_matching"])
 
 
-# Connect to the bank dataset with the gvkeys
+
+# now the same procedure for bank specific variables and alternative thresholds
+
 
 # load in the data
 banks_data_pivot = pd.read_csv(
@@ -245,7 +247,7 @@ banks_assets_total["mean_pretreatment"] = banks_assets_total[
 ].mean(axis=1, skipna=True)
 
 
-# map the averages onto the loans for eps
+# map eps to the loan level dataset
 banks_eps = banks_eps[["gvkey", "mean_pretreatment"]]
 banks_eps["mean_pretreatment"] = banks_eps["mean_pretreatment"].astype(float)
 banks_eps["gvkey"] = banks_eps["gvkey"].astype(int)
